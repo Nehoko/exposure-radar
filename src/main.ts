@@ -6,8 +6,8 @@ import {
   tables,
 } from "./module_bindings/index.ts";
 
-const HOST = getEnv("SPACETIMEDB_HOST","ws://localhost:3000");
-const DB_NAME = getEnv("SPACETIMEDB_DB_NAME","exposure-radar");
+const HOST = getEnv("SPACETIMEDB_HOST", "ws://localhost:3000");
+const DB_NAME = getEnv("SPACETIMEDB_DB_NAME", "exposure-radar");
 
 DbConnection.builder()
   .withUri(HOST)
@@ -33,10 +33,6 @@ DbConnection.builder()
   })
   .build();
 
-function getEnv(name: string, defaultValue?: string): string {
-    const env = Deno.env.get(name);
-    if (env === undefined) {
-        return defaultValue;
-    }
-    return env;
+function getEnv(name: string, defaultValue: string): string {
+  return Deno.env.get(name) ?? defaultValue;
 }
