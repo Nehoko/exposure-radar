@@ -1,9 +1,0 @@
-{
-  "name": "exposure-radar",
-  "private": true,
-  "version": "0.0.1",
-  "type": "module",
-  "dependencies": {
-    "spacetimedb": "2.8.*"
-  }
-}

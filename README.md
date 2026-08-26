@@ -1,6 +1,7 @@
 # Exposure Radar
 
-Exposure Radar is a small app for monitoring stocks, ETFs, and crypto in one place.
+Exposure Radar is a small app for monitoring stocks, ETFs, and crypto in one
+place.
 
 The app will help answer two simple questions:
 
@@ -9,11 +10,15 @@ The app will help answer two simple questions:
 
 ## The idea
 
-An ETF contains many companies. If you own an ETF and also own some of its companies directly, your real exposure can be larger than it looks.
+An ETF contains many companies. If you own an ETF and also own some of its
+companies directly, your real exposure can be larger than it looks.
 
-For example, you may own NVIDIA shares directly and also own NVIDIA indirectly through several ETFs. Exposure Radar will add these positions together and show the total.
+For example, you may own NVIDIA shares directly and also own NVIDIA indirectly
+through several ETFs. Exposure Radar will add these positions together and show
+the total.
 
-Later, the app may also explain which assets caused the biggest change in the portfolio and warn when one exposure becomes too large.
+Later, the app may also explain which assets caused the biggest change in the
+portfolio and warn when one exposure becomes too large.
 
 ## First version
 
@@ -43,15 +48,15 @@ They can be considered only after the basic app works.
 
 ## Why SpacetimeDB?
 
-This is a learning project for SpacetimeDB. SpacetimeDB will store the portfolio and prices. The web app will subscribe to this data, so changes can appear immediately without refreshing the page.
+This is a learning project for SpacetimeDB. SpacetimeDB will store the portfolio
+and prices. The web app will subscribe to this data, so changes can appear
+immediately without refreshing the page.
 
 ## Planned technology
 
 - SpacetimeDB with a TypeScript module
-- TypeScript web application
+- Deno and Fresh web application
 - A simple web interface
-
-The exact frontend framework can be chosen when development starts.
 
 ## Project plan
 
@@ -59,8 +64,10 @@ See [PLAN.md](PLAN.md) for small development milestones.
 
 ## Project status
 
-Planning.
+Milestone 1 is in progress. The SpacetimeDB module and Fresh web application
+have been created. Connecting them is next.
 
 ## Important note
 
-Exposure Radar is an educational project. It does not provide financial advice and it does not execute trades.
+Exposure Radar is an educational project. It does not provide financial advice
+and it does not execute trades.

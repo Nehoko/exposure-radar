@@ -1,5 +1,6 @@
 node_modules
 dist
+_fresh
 *.log
 
 .DS_Store

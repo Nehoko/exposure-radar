@@ -1,13 +1,14 @@
 # Exposure Radar Plan
 
-The goal is to build one small working feature at a time. Each milestone should leave the app in a usable state.
+The goal is to build one small working feature at a time. Each milestone should
+leave the app in a usable state.
 
 ## Milestone 1: Start the project
 
 Goal: Open a basic web page and connect it to SpacetimeDB.
 
-- [ ] Create a TypeScript SpacetimeDB project.
-- [ ] Create a simple web application.
+- [x] Create a TypeScript SpacetimeDB project.
+- [x] Create a simple web application.
 - [ ] Connect the web application to the local SpacetimeDB server.
 - [ ] Show `Connected` or `Disconnected` on the page.
 
@@ -23,7 +24,8 @@ Goal: Save a small list of assets.
 - [ ] Show all positions in a table.
 - [ ] Allow a position to be removed.
 
-Done when: a user can add and remove positions and the data remains after a page refresh.
+Done when: a user can add and remove positions and the data remains after a page
+refresh.
 
 ## Milestone 3: Show portfolio value
 
@@ -58,7 +60,8 @@ Goal: Show hidden company exposure inside a few supported ETFs.
 - [ ] Combine direct and indirect exposure.
 - [ ] Show the largest real exposures.
 
-Done when: the app can show that the same company is owned directly and through an ETF.
+Done when: the app can show that the same company is owned directly and through
+an ETF.
 
 ## Milestone 6: Add one useful warning
 
