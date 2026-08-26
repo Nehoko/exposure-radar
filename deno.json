@@ -1,0 +1,18 @@
+{
+  "tasks": {
+    "dev": "deno run --watch --allow-net --allow-env=SPACETIMEDB_HOST,SPACETIMEDB_DB_NAME --unstable-sloppy-imports src/main.ts",
+    "start": "deno run --allow-net --allow-env=SPACETIMEDB_HOST,SPACETIMEDB_DB_NAME --unstable-sloppy-imports src/main.ts",
+    "check": "deno check --unstable-sloppy-imports src/main.ts",
+    "spacetime:generate": "spacetime generate --lang typescript --out-dir src/module_bindings --module-path spacetimedb",
+    "spacetime:publish:local": "spacetime publish --module-path spacetimedb --server local",
+    "spacetime:publish": "spacetime publish --module-path spacetimedb --server maincloud"
+  },
+  "nodeModulesDir": "none",
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  }
+}

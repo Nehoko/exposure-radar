@@ -1,0 +1,8 @@
+{
+  "dev": {
+    "run": "deno task dev"
+  },
+  "database": "exposure-radar",
+  "server": "maincloud",
+  "module-path": "./spacetimedb"
+}
