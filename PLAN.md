@@ -18,14 +18,27 @@ Done when: the page can connect to SpacetimeDB.
 
 Goal: Save a small list of assets.
 
-- [ ] Add an `asset` table.
-- [ ] Add a `position` table.
-- [ ] Add a form for a symbol, asset type, amount, and purchase price.
-- [ ] Show all positions in a table.
-- [ ] Allow a position to be removed.
+- [x] Add an `asset` table.
+- [x] Add a `position` table.
+- [x] Add a form for a symbol, asset type, amount, and purchase price.
+- [x] Show all positions in a table.
+- [x] Allow a position to be removed.
 
 Done when: a user can add and remove positions and the data remains after a page
 refresh.
+
+## Milestone 2.5: Protect the portfolio
+
+Goal: Open a portfolio with one private secret.
+
+- [x] Generate a long random portfolio secret.
+- [x] Store only its hash and salt in a private table.
+- [x] Remember authorised browser identities without storing the secret.
+- [x] Expose assets and positions only through private portfolio views.
+- [x] Add portfolio sign-in, creation, and sign-out screens.
+
+Done when: the same secret opens one portfolio on another browser, while an
+unknown identity cannot read it.
 
 ## Milestone 3: Show portfolio value
 

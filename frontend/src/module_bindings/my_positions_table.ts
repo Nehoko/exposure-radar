@@ -11,5 +11,10 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  name: __t.string(),
+  id: __t.u64().primaryKey(),
+  owner: __t.identity(),
+  assetId: __t.u64().name("asset_id"),
+  amount: __t.f64(),
+  purchasePrice: __t.f64().name("purchase_price"),
+  portfolioId: __t.u64().name("portfolio_id"),
 });

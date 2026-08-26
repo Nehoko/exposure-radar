@@ -3,11 +3,21 @@
 
 /* eslint-disable */
 /* tslint:disable */
-import { type Infer as __Infer } from 'spacetimedb';
+import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
-import AddReducer from '../add_reducer';
-import SayHelloReducer from '../say_hello_reducer';
+import AddReducer from "../add_reducer";
+import AddPositionReducer from "../add_position_reducer";
+import AuthenticatePortfolioReducer from "../authenticate_portfolio_reducer";
+import CreatePortfolioReducer from "../create_portfolio_reducer";
+import LogoutPortfolioReducer from "../logout_portfolio_reducer";
+import RemovePositionReducer from "../remove_position_reducer";
+import SayHelloReducer from "../say_hello_reducer";
 
 export type AddParams = __Infer<typeof AddReducer>;
+export type AddPositionParams = __Infer<typeof AddPositionReducer>;
+export type AuthenticatePortfolioParams = __Infer<typeof AuthenticatePortfolioReducer>;
+export type CreatePortfolioParams = __Infer<typeof CreatePortfolioReducer>;
+export type LogoutPortfolioParams = __Infer<typeof LogoutPortfolioReducer>;
+export type RemovePositionParams = __Infer<typeof RemovePositionReducer>;
 export type SayHelloParams = __Infer<typeof SayHelloReducer>;

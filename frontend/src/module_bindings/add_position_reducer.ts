@@ -10,6 +10,9 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default __t.row({
-  name: __t.string(),
-});
+export default {
+  symbol: __t.string(),
+  assetType: __t.string(),
+  amount: __t.f64(),
+  purchasePrice: __t.f64(),
+};

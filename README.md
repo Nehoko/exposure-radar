@@ -64,8 +64,17 @@ See [PLAN.md](PLAN.md) for small development milestones.
 
 ## Project status
 
-Milestone 1 is in progress. The SpacetimeDB module and Fresh web application
-have been created. Connecting them is next.
+Milestone 2 is complete. A user can create a private portfolio, add positions,
+and remove them.
+
+## Portfolio secret
+
+A portfolio is protected by one long secret. The app shows it only when the
+portfolio is created. Save it somewhere safe because it cannot be recovered.
+
+The database stores only a salted hash of the secret. It does not store the
+original secret. After the secret is checked, SpacetimeDB remembers that
+browser's identity until the user signs out.
 
 ## Important note
 

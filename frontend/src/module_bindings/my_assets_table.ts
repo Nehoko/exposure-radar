@@ -11,5 +11,9 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  name: __t.string(),
+  id: __t.u64().primaryKey(),
+  owner: __t.identity(),
+  symbol: __t.string(),
+  assetType: __t.string().name("asset_type"),
+  portfolioId: __t.u64().name("portfolio_id"),
 });

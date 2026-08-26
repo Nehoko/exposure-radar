@@ -8,9 +8,56 @@ import {
   t as __t,
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
-} from 'spacetimedb';
+} from "spacetimedb";
 
-export const Person = __t.object('Person', {
+export const Asset = __t.object("Asset", {
+  id: __t.u64(),
+  owner: __t.identity(),
+  symbol: __t.string(),
+  assetType: __t.string(),
+  portfolioId: __t.u64(),
+});
+export type Asset = __Infer<typeof Asset>;
+
+export const MyAssets = __t.object("MyAssets", {});
+export type MyAssets = __Infer<typeof MyAssets>;
+
+export const MyPortfolio = __t.object("MyPortfolio", {});
+export type MyPortfolio = __Infer<typeof MyPortfolio>;
+
+export const MyPositions = __t.object("MyPositions", {});
+export type MyPositions = __Infer<typeof MyPositions>;
+
+export const Person = __t.object("Person", {
   name: __t.string(),
 });
 export type Person = __Infer<typeof Person>;
+
+export const Portfolio = __t.object("Portfolio", {
+  id: __t.u64(),
+});
+export type Portfolio = __Infer<typeof Portfolio>;
+
+export const PortfolioAccess = __t.object("PortfolioAccess", {
+  identity: __t.identity(),
+  portfolioId: __t.u64(),
+});
+export type PortfolioAccess = __Infer<typeof PortfolioAccess>;
+
+export const PortfolioCredential = __t.object("PortfolioCredential", {
+  tokenId: __t.string(),
+  portfolioId: __t.u64(),
+  salt: __t.string(),
+  tokenHash: __t.string(),
+});
+export type PortfolioCredential = __Infer<typeof PortfolioCredential>;
+
+export const Position = __t.object("Position", {
+  id: __t.u64(),
+  owner: __t.identity(),
+  assetId: __t.u64(),
+  amount: __t.f64(),
+  purchasePrice: __t.f64(),
+  portfolioId: __t.u64(),
+});
+export type Position = __Infer<typeof Position>;
