@@ -1,4 +1,5 @@
 import { Head } from "fresh/runtime";
+import SpacetimeStatus from "../islands/SpacetimeStatus.tsx";
 import { define } from "../utils.ts";
 
 const assetTypes = [
@@ -20,10 +21,7 @@ export default define.page(function Home() {
             <span class="brand-mark" aria-hidden="true">ER</span>
             <span>Exposure Radar</span>
           </a>
-          <span class="status-pill">
-            <span class="status-dot" aria-hidden="true" />
-            Building the first version
-          </span>
+          <SpacetimeStatus />
         </header>
 
         <main>

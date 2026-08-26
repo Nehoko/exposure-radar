@@ -68,24 +68,76 @@ a {
   letter-spacing: 0.04em;
 }
 
-.status-pill {
+.connection-status {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 11px;
+  max-width: min(360px, 48vw);
+  padding: 9px 13px 9px 11px;
   border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 999px;
-  color: #9da9be;
+  border-radius: 14px;
   background: rgba(13, 19, 33, 0.72);
-  font-size: 0.76rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
 }
 
-.status-dot {
-  width: 7px;
-  height: 7px;
+.connection-dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: #f0b451;
   box-shadow: 0 0 12px rgba(240, 180, 81, 0.65);
+}
+
+.connection-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.connection-copy strong,
+.connection-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connection-copy strong {
+  color: #c7d0e3;
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
+.connection-copy span {
+  color: #6f7b90;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.62rem;
+}
+
+.connection-connected {
+  border-color: rgba(78, 216, 159, 0.2);
+  background: rgba(12, 31, 29, 0.68);
+}
+
+.connection-connected .connection-dot {
+  background: #4ed89f;
+  box-shadow: 0 0 14px rgba(78, 216, 159, 0.72);
+}
+
+.connection-connected .connection-copy strong {
+  color: #aeead2;
+}
+
+.connection-disconnected .connection-dot,
+.connection-error .connection-dot {
+  background: #f07474;
+  box-shadow: 0 0 14px rgba(240, 116, 116, 0.62);
+}
+
+.connection-error {
+  border-color: rgba(240, 116, 116, 0.2);
+  background: rgba(43, 20, 27, 0.68);
 }
 
 .hero {
@@ -386,10 +438,8 @@ footer {
     width: min(100% - 28px, 1120px);
   }
 
-  .status-pill {
-    max-width: 150px;
-    justify-content: center;
-    text-align: center;
+  .connection-status {
+    max-width: 180px;
   }
 
   .hero {

@@ -9,8 +9,8 @@ Goal: Open a basic web page and connect it to SpacetimeDB.
 
 - [x] Create a TypeScript SpacetimeDB project.
 - [x] Create a simple web application.
-- [ ] Connect the web application to the local SpacetimeDB server.
-- [ ] Show `Connected` or `Disconnected` on the page.
+- [x] Connect the web application to the local SpacetimeDB server.
+- [x] Show `Connected` or `Disconnected` on the page.
 
 Done when: the page can connect to SpacetimeDB.
 
