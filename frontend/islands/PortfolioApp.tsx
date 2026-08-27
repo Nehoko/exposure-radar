@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "preact/hooks";
 import ConnectionStatus, {
   type ConnectionState,
 } from "../components/ConnectionStatus.tsx";
+import ExposureBreakdown from "../components/ExposureBreakdown.tsx";
 import GeneratedSecret from "../components/GeneratedSecret.tsx";
 import PortfolioAccess from "../components/PortfolioAccess.tsx";
 import PortfolioSummary from "../components/PortfolioSummary.tsx";
@@ -12,6 +13,7 @@ import {
   forgetSpacetimeDBToken,
 } from "../lib/spacetimedb.ts";
 import {
+  calculatePortfolioExposures,
   calculatePortfolioTotals,
   calculatePositionMetrics,
   getPriceMovement,
@@ -19,6 +21,7 @@ import {
 import { type DbConnection, tables } from "../src/module_bindings/index.ts";
 import type {
   Asset,
+  EtfHolding,
   Position,
   Price,
   TestPriceFeed,
@@ -39,6 +42,7 @@ export default function PortfolioApp() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [prices, setPrices] = useState<Price[]>([]);
+  const [etfHoldings, setEtfHoldings] = useState<EtfHolding[]>([]);
   const [testPriceFeeds, setTestPriceFeeds] = useState<TestPriceFeed[]>([]);
   const [symbol, setSymbol] = useState("");
   const [assetType, setAssetType] = useState("stock");
@@ -53,6 +57,7 @@ export default function PortfolioApp() {
   const [savingPrice, setSavingPrice] = useState(false);
   const [changingTestPrices, setChangingTestPrices] = useState(false);
   const [testPriceError, setTestPriceError] = useState<string>();
+  const [exposureError, setExposureError] = useState<string>();
   const [authenticating, setAuthenticating] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [removingId, setRemovingId] = useState<bigint>();
@@ -70,6 +75,7 @@ export default function PortfolioApp() {
           setAssets([...activeConnection.db.myAssets.iter()]);
           setPositions([...activeConnection.db.myPositions.iter()]);
           setPrices([...activeConnection.db.myPrices.iter()]);
+          setEtfHoldings([...activeConnection.db.etfHolding.iter()]);
           setTestPriceFeeds([
             ...activeConnection.db.myTestPriceFeed.iter(),
           ]);
@@ -94,12 +100,25 @@ export default function PortfolioApp() {
         activeConnection.db.myTestPriceFeed.onInsert(syncPortfolio);
         activeConnection.db.myTestPriceFeed.onDelete(syncPortfolio);
         activeConnection.db.myTestPriceFeed.onUpdate(syncPortfolio);
+        activeConnection.db.etfHolding.onInsert(syncPortfolio);
+        activeConnection.db.etfHolding.onDelete(syncPortfolio);
+        activeConnection.db.etfHolding.onUpdate(syncPortfolio);
 
         activeConnection.subscriptionBuilder()
           .onApplied(() => {
             if (disposed) return;
             syncPortfolio();
             setSubscriptionReady(true);
+            if (activeConnection.db.etfHolding.count() === 0n) {
+              activeConnection.reducers.loadSampleEtfHoldings({}).catch(
+                (error) => {
+                  if (disposed) return;
+                  setExposureError(
+                    getErrorMessage(error, "Could not load sample ETF data."),
+                  );
+                },
+              );
+            }
           })
           .onError((ctx) => {
             if (disposed) return;
@@ -112,6 +131,7 @@ export default function PortfolioApp() {
             tables.myPositions,
             tables.myPrices,
             tables.myTestPriceFeed,
+            tables.etfHolding,
           ]);
       },
       onDisconnected(error) {
@@ -337,6 +357,7 @@ export default function PortfolioApp() {
                 assetsById={assetsById}
                 positions={positions}
                 pricesByAssetId={pricesByAssetId}
+                etfHoldings={etfHoldings}
                 symbol={symbol}
                 assetType={assetType}
                 amount={amount}
@@ -348,6 +369,7 @@ export default function PortfolioApp() {
                 testPricesRunning={testPriceFeeds[0]?.isRunning ?? false}
                 changingTestPrices={changingTestPrices}
                 testPriceError={testPriceError}
+                exposureError={exposureError}
                 removingId={removingId}
                 onSymbolChange={setSymbol}
                 onAssetTypeChange={setAssetType}
@@ -374,6 +396,7 @@ interface PortfolioDashboardProps {
   assetsById: Map<bigint, Asset>;
   positions: Position[];
   pricesByAssetId: Map<bigint, Price>;
+  etfHoldings: EtfHolding[];
   symbol: string;
   assetType: string;
   amount: string;
@@ -385,6 +408,7 @@ interface PortfolioDashboardProps {
   testPricesRunning: boolean;
   changingTestPrices: boolean;
   testPriceError?: string;
+  exposureError?: string;
   removingId?: bigint;
   onSymbolChange: (value: string) => void;
   onAssetTypeChange: (value: string) => void;
@@ -402,6 +426,7 @@ function PortfolioDashboard(props: PortfolioDashboardProps) {
     assetsById,
     positions,
     pricesByAssetId,
+    etfHoldings,
     symbol,
     assetType,
     amount,
@@ -413,10 +438,22 @@ function PortfolioDashboard(props: PortfolioDashboardProps) {
     testPricesRunning,
     changingTestPrices,
     testPriceError,
+    exposureError,
     removingId,
   } = props;
 
   const totals = calculatePortfolioTotals(positions, pricesByAssetId);
+  const exposureResult = calculatePortfolioExposures(
+    assets,
+    positions,
+    pricesByAssetId,
+    etfHoldings,
+  );
+  const supportedEtfs = [
+    ...new Set(
+      etfHoldings.map((holding) => holding.etfSymbol),
+    ),
+  ].sort();
 
   return (
     <>
@@ -684,6 +721,18 @@ function PortfolioDashboard(props: PortfolioDashboardProps) {
               )}
           </div>
         </div>
+
+        {exposureError && (
+          <p class="form-error exposure-error" role="alert">
+            {exposureError}
+          </p>
+        )}
+        <ExposureBreakdown
+          exposures={exposureResult.exposures}
+          portfolioValue={exposureResult.portfolioValue}
+          unanalysedEtfValue={exposureResult.unanalysedEtfValue}
+          supportedEtfs={supportedEtfs}
+        />
       </section>
     </>
   );

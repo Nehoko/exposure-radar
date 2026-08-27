@@ -67,11 +67,11 @@ Done when: two open browser windows show the same changing prices and totals.
 
 Goal: Show hidden company exposure inside a few supported ETFs.
 
-- [ ] Add an `etf_holding` table.
-- [ ] Add sample holdings for two or three ETFs.
-- [ ] Calculate indirect company exposure.
-- [ ] Combine direct and indirect exposure.
-- [ ] Show the largest real exposures.
+- [x] Add an `etf_holding` table.
+- [x] Add sample holdings for two or three ETFs.
+- [x] Calculate indirect company exposure.
+- [x] Combine direct and indirect exposure.
+- [x] Show the largest real exposures.
 
 Done when: the app can show that the same company is owned directly and through
 an ETF.

@@ -68,6 +68,17 @@ const test_price_tick = table(
   },
 );
 
+const etf_holding = table(
+  { name: "etf_holding", public: true },
+  {
+    key: t.string().primaryKey(),
+    etf_symbol: t.string().index("btree"),
+    holding_symbol: t.string().index("btree"),
+    holding_name: t.string(),
+    weight: t.f64(),
+  },
+);
+
 const portfolio = table(
   { name: "portfolio" },
   { id: t.u64().primaryKey().autoInc() },
@@ -98,6 +109,7 @@ const spacetimedb = schema({
   price,
   test_price_feed,
   test_price_tick,
+  etf_holding,
   portfolio,
   portfolio_credential,
   portfolio_access,
@@ -165,8 +177,8 @@ export const myTestPriceFeed = spacetimedb.view(
   },
 );
 
-export const init = spacetimedb.init((_ctx) => {
-  // Called when the module is initially published
+export const init = spacetimedb.init((ctx) => {
+  seedSampleEtfHoldings(ctx);
 });
 
 export const onConnect = spacetimedb.clientConnected((_ctx) => {
@@ -189,6 +201,10 @@ export const sayHello = spacetimedb.reducer((ctx) => {
     console.info(`Hello, ${person.name}!`);
   }
   console.info("Hello, World!");
+});
+
+export const loadSampleEtfHoldings = spacetimedb.reducer((ctx) => {
+  seedSampleEtfHoldings(ctx);
 });
 
 const allowedAssetTypes = new Set(["stock", "etf", "crypto"]);
@@ -438,6 +454,41 @@ function updatePortfolioTestPrices(ctx: Ctx, portfolioId: bigint): void {
     } else {
       ctx.db.price.insert(nextPrice);
     }
+  }
+}
+
+const sampleEtfHoldings = [
+  ["VOO", "NVDA", "NVIDIA", 8.0],
+  ["VOO", "AAPL", "Apple", 7.0],
+  ["VOO", "MSFT", "Microsoft", 6.2],
+  ["VOO", "AMZN", "Amazon", 3.8],
+  ["VOO", "META", "Meta Platforms", 2.6],
+  ["QQQ", "NVDA", "NVIDIA", 9.2],
+  ["QQQ", "MSFT", "Microsoft", 8.0],
+  ["QQQ", "AAPL", "Apple", 7.5],
+  ["QQQ", "AMZN", "Amazon", 5.4],
+  ["QQQ", "AVGO", "Broadcom", 4.8],
+  ["VWCE", "NVDA", "NVIDIA", 4.5],
+  ["VWCE", "AAPL", "Apple", 4.2],
+  ["VWCE", "MSFT", "Microsoft", 3.7],
+  ["VWCE", "AMZN", "Amazon", 2.3],
+  ["VWCE", "META", "Meta Platforms", 1.6],
+] as const;
+
+function seedSampleEtfHoldings(ctx: Ctx): void {
+  for (
+    const [etfSymbol, holdingSymbol, holdingName, weight] of sampleEtfHoldings
+  ) {
+    const key = `${etfSymbol}:${holdingSymbol}`;
+    if (ctx.db.etf_holding.key.find(key)) continue;
+
+    ctx.db.etf_holding.insert({
+      key,
+      etf_symbol: etfSymbol,
+      holding_symbol: holdingSymbol,
+      holding_name: holdingName,
+      weight,
+    });
   }
 }
 

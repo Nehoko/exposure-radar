@@ -31,6 +31,7 @@ The first useful version will be deliberately small. It will let a user:
 - see the total portfolio value;
 - see simple profit or loss;
 - see direct and indirect exposure from supported ETFs;
+- inspect sample holdings for VOO, QQQ, and VWCE;
 - watch the screen update immediately when data changes.
 
 ## Not in the first version
@@ -65,9 +66,12 @@ See [PLAN.md](PLAN.md) for small development milestones.
 
 ## Project status
 
-Milestone 4 is complete. A user can create a private portfolio, add positions,
-enter prices manually, or run shared simulated prices that update portfolio
-value and profit or loss every five seconds.
+Milestone 5 is complete. A user can create a private portfolio, add positions,
+run shared simulated prices, and see direct assets combined with sample company
+holdings inside VOO, QQQ, and VWCE.
+
+The ETF holdings are a small educational sample, not current market data.
+Holdings not included in the sample are shown as unanalysed ETF value.
 
 ## Portfolio secret
 

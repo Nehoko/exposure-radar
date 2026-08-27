@@ -19,6 +19,15 @@ export const Asset = __t.object("Asset", {
 });
 export type Asset = __Infer<typeof Asset>;
 
+export const EtfHolding = __t.object("EtfHolding", {
+  key: __t.string(),
+  etfSymbol: __t.string(),
+  holdingSymbol: __t.string(),
+  holdingName: __t.string(),
+  weight: __t.f64(),
+});
+export type EtfHolding = __Infer<typeof EtfHolding>;
+
 export const MyAssets = __t.object("MyAssets", {});
 export type MyAssets = __Infer<typeof MyAssets>;
 
