@@ -80,10 +80,10 @@ an ETF.
 
 Goal: Warn when one company becomes too large in the portfolio.
 
-- [ ] Let the user choose a maximum exposure percentage.
-- [ ] Check the combined direct and indirect exposure.
-- [ ] Show a warning when the limit is passed.
-- [ ] Save a short history of warnings.
+- [x] Let the user choose a maximum exposure percentage.
+- [x] Check the combined direct and indirect exposure.
+- [x] Show a warning when the limit is passed.
+- [x] Save a short history of warnings.
 
 Done when: a price or position change can create a warning immediately.
 

@@ -28,8 +28,40 @@ export const EtfHolding = __t.object("EtfHolding", {
 });
 export type EtfHolding = __Infer<typeof EtfHolding>;
 
+export const ExposureBreach = __t.object("ExposureBreach", {
+  key: __t.string(),
+  portfolioId: __t.u64(),
+  symbol: __t.string(),
+  percentage: __t.f64(),
+});
+export type ExposureBreach = __Infer<typeof ExposureBreach>;
+
+export const ExposureLimit = __t.object("ExposureLimit", {
+  portfolioId: __t.u64(),
+  maximumPercentage: __t.f64(),
+});
+export type ExposureLimit = __Infer<typeof ExposureLimit>;
+
+export const ExposureWarning = __t.object("ExposureWarning", {
+  id: __t.u64(),
+  portfolioId: __t.u64(),
+  symbol: __t.string(),
+  percentage: __t.f64(),
+  limit: __t.f64(),
+  exposureValue: __t.f64(),
+  portfolioValue: __t.f64(),
+  createdAt: __t.timestamp(),
+});
+export type ExposureWarning = __Infer<typeof ExposureWarning>;
+
 export const MyAssets = __t.object("MyAssets", {});
 export type MyAssets = __Infer<typeof MyAssets>;
+
+export const MyExposureLimit = __t.object("MyExposureLimit", {});
+export type MyExposureLimit = __Infer<typeof MyExposureLimit>;
+
+export const MyExposureWarnings = __t.object("MyExposureWarnings", {});
+export type MyExposureWarnings = __Infer<typeof MyExposureWarnings>;
 
 export const MyPortfolio = __t.object("MyPortfolio", {});
 export type MyPortfolio = __Infer<typeof MyPortfolio>;

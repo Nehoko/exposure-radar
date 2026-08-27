@@ -42,6 +42,7 @@ import LoadSampleEtfHoldingsReducer from "./load_sample_etf_holdings_reducer";
 import LogoutPortfolioReducer from "./logout_portfolio_reducer";
 import RemovePositionReducer from "./remove_position_reducer";
 import SayHelloReducer from "./say_hello_reducer";
+import SetExposureLimitReducer from "./set_exposure_limit_reducer";
 import SetPriceReducer from "./set_price_reducer";
 import StartTestPricesReducer from "./start_test_prices_reducer";
 import StopTestPricesReducer from "./stop_test_prices_reducer";
@@ -51,6 +52,8 @@ import StopTestPricesReducer from "./stop_test_prices_reducer";
 // Import all table schema definitions
 import EtfHoldingRow from "./etf_holding_table";
 import MyAssetsRow from "./my_assets_table";
+import MyExposureLimitRow from "./my_exposure_limit_table";
+import MyExposureWarningsRow from "./my_exposure_warnings_table";
 import MyPortfolioRow from "./my_portfolio_table";
 import MyPositionsRow from "./my_positions_table";
 import MyPricesRow from "./my_prices_table";
@@ -92,6 +95,20 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyAssetsRow),
+  myExposureLimit: __table({
+    name: 'my_exposure_limit',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyExposureLimitRow),
+  myExposureWarnings: __table({
+    name: 'my_exposure_warnings',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyExposureWarningsRow),
   myPortfolio: __table({
     name: 'my_portfolio',
     indexes: [
@@ -132,6 +149,7 @@ const reducersSchema = __reducers(
   __reducerSchema("logout_portfolio", LogoutPortfolioReducer),
   __reducerSchema("remove_position", RemovePositionReducer),
   __reducerSchema("say_hello", SayHelloReducer),
+  __reducerSchema("set_exposure_limit", SetExposureLimitReducer),
   __reducerSchema("set_price", SetPriceReducer),
   __reducerSchema("start_test_prices", StartTestPricesReducer),
   __reducerSchema("stop_test_prices", StopTestPricesReducer),
@@ -181,7 +199,6 @@ function __withTableAccessorAliases<T extends object>(target: T, freeze = false)
   }
   return freeze ? Object.freeze(out) : out;
 }
-
 type __DbViewBase = __DbConnectionImpl<typeof REMOTE_MODULE>["db"];
 export type DbView = __DbViewBase & {
   /** @deprecated Use `etfHolding` instead. This alias will be removed in the next major version. */

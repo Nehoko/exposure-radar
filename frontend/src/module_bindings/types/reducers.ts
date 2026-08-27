@@ -14,6 +14,7 @@ import LoadSampleEtfHoldingsReducer from "../load_sample_etf_holdings_reducer";
 import LogoutPortfolioReducer from "../logout_portfolio_reducer";
 import RemovePositionReducer from "../remove_position_reducer";
 import SayHelloReducer from "../say_hello_reducer";
+import SetExposureLimitReducer from "../set_exposure_limit_reducer";
 import SetPriceReducer from "../set_price_reducer";
 import StartTestPricesReducer from "../start_test_prices_reducer";
 import StopTestPricesReducer from "../stop_test_prices_reducer";
@@ -26,6 +27,7 @@ export type LoadSampleEtfHoldingsParams = __Infer<typeof LoadSampleEtfHoldingsRe
 export type LogoutPortfolioParams = __Infer<typeof LogoutPortfolioReducer>;
 export type RemovePositionParams = __Infer<typeof RemovePositionReducer>;
 export type SayHelloParams = __Infer<typeof SayHelloReducer>;
+export type SetExposureLimitParams = __Infer<typeof SetExposureLimitReducer>;
 export type SetPriceParams = __Infer<typeof SetPriceReducer>;
 export type StartTestPricesParams = __Infer<typeof StartTestPricesReducer>;
 export type StopTestPricesParams = __Infer<typeof StopTestPricesReducer>;

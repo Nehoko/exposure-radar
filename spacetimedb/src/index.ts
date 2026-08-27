@@ -102,6 +102,38 @@ const portfolio_access = table(
   },
 );
 
+const exposure_limit = table(
+  { name: "exposure_limit" },
+  {
+    portfolio_id: t.u64().primaryKey(),
+    maximum_percentage: t.f64(),
+  },
+);
+
+const exposure_breach = table(
+  { name: "exposure_breach" },
+  {
+    key: t.string().primaryKey(),
+    portfolio_id: t.u64().index("btree"),
+    symbol: t.string(),
+    percentage: t.f64(),
+  },
+);
+
+const exposure_warning = table(
+  { name: "exposure_warning" },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    portfolio_id: t.u64().index("btree"),
+    symbol: t.string(),
+    percentage: t.f64(),
+    limit: t.f64(),
+    exposure_value: t.f64(),
+    portfolio_value: t.f64(),
+    created_at: t.timestamp(),
+  },
+);
+
 const spacetimedb = schema({
   person,
   asset,
@@ -113,6 +145,9 @@ const spacetimedb = schema({
   portfolio,
   portfolio_credential,
   portfolio_access,
+  exposure_limit,
+  exposure_breach,
+  exposure_warning,
 });
 export default spacetimedb;
 
@@ -177,6 +212,29 @@ export const myTestPriceFeed = spacetimedb.view(
   },
 );
 
+export const myExposureLimit = spacetimedb.view(
+  { name: "my_exposure_limit", public: true },
+  t.array(exposure_limit.rowType),
+  (ctx) => {
+    const access = ctx.db.portfolio_access.identity.find(ctx.sender);
+    if (!access) return [];
+
+    const limit = ctx.db.exposure_limit.portfolio_id.find(access.portfolio_id);
+    return limit ? [limit] : [];
+  },
+);
+
+export const myExposureWarnings = spacetimedb.view(
+  { name: "my_exposure_warnings", public: true },
+  t.array(exposure_warning.rowType),
+  (ctx) => {
+    const access = ctx.db.portfolio_access.identity.find(ctx.sender);
+    return access
+      ? [...ctx.db.exposure_warning.portfolio_id.filter(access.portfolio_id)]
+      : [];
+  },
+);
+
 export const init = spacetimedb.init((ctx) => {
   seedSampleEtfHoldings(ctx);
 });
@@ -205,6 +263,8 @@ export const sayHello = spacetimedb.reducer((ctx) => {
 
 export const loadSampleEtfHoldings = spacetimedb.reducer((ctx) => {
   seedSampleEtfHoldings(ctx);
+  const access = ctx.db.portfolio_access.identity.find(ctx.sender);
+  if (access) evaluateExposureWarnings(ctx, access.portfolio_id);
 });
 
 const allowedAssetTypes = new Set(["stock", "etf", "crypto"]);
@@ -318,6 +378,7 @@ export const addPosition = spacetimedb.reducer({
     amount,
     portfolio_id: portfolioId,
   });
+  evaluateExposureWarnings(ctx, portfolioId);
 });
 
 export const removePosition = spacetimedb.reducer(
@@ -334,6 +395,7 @@ export const removePosition = spacetimedb.reducer(
       throw new SenderError("You cannot remove this position");
     }
     ctx.db.position.id.delete(positionId);
+    evaluateExposureWarnings(ctx, portfolioId);
   },
 );
 
@@ -367,6 +429,33 @@ export const setPrice = spacetimedb.reducer(
     } else {
       ctx.db.price.insert(nextPrice);
     }
+    evaluateExposureWarnings(ctx, portfolioId);
+  },
+);
+
+export const setExposureLimit = spacetimedb.reducer(
+  { maximumPercentage: t.f64() },
+  (ctx, { maximumPercentage }) => {
+    const portfolioId = requirePortfolioId(ctx);
+    if (
+      !Number.isFinite(maximumPercentage) ||
+      maximumPercentage < 1 ||
+      maximumPercentage > 100
+    ) {
+      throw new SenderError("Exposure limit must be between 1% and 100%");
+    }
+
+    const existing = ctx.db.exposure_limit.portfolio_id.find(portfolioId);
+    const next = {
+      portfolio_id: portfolioId,
+      maximum_percentage: maximumPercentage,
+    };
+    if (existing) {
+      ctx.db.exposure_limit.portfolio_id.update(next);
+    } else {
+      ctx.db.exposure_limit.insert(next);
+    }
+    evaluateExposureWarnings(ctx, portfolioId);
   },
 );
 
@@ -455,6 +544,7 @@ function updatePortfolioTestPrices(ctx: Ctx, portfolioId: bigint): void {
       ctx.db.price.insert(nextPrice);
     }
   }
+  evaluateExposureWarnings(ctx, portfolioId);
 }
 
 const sampleEtfHoldings = [
@@ -489,6 +579,126 @@ function seedSampleEtfHoldings(ctx: Ctx): void {
       holding_name: holdingName,
       weight,
     });
+  }
+}
+
+interface CompanyExposureValue {
+  symbol: string;
+  value: number;
+}
+
+function calculateCompanyExposures(
+  ctx: Ctx,
+  portfolioId: bigint,
+): { portfolioValue: number; exposures: CompanyExposureValue[] } {
+  const exposureBySymbol = new Map<string, number>();
+  let portfolioValue = 0;
+
+  for (const position of ctx.db.position.portfolio_id.filter(portfolioId)) {
+    const asset = ctx.db.asset.id.find(position.asset_id);
+    const currentPrice = ctx.db.price.asset_id.find(position.asset_id);
+    if (!asset || !currentPrice) continue;
+
+    const value = position.amount * currentPrice.value;
+    portfolioValue += value;
+
+    if (asset.asset_type === "stock") {
+      addCompanyExposure(exposureBySymbol, asset.symbol, value);
+      continue;
+    }
+    if (asset.asset_type !== "etf") continue;
+
+    for (
+      const holding of ctx.db.etf_holding.etf_symbol.filter(
+        asset.symbol.toUpperCase(),
+      )
+    ) {
+      addCompanyExposure(
+        exposureBySymbol,
+        holding.holding_symbol,
+        value * holding.weight / 100,
+      );
+    }
+  }
+
+  return {
+    portfolioValue,
+    exposures: [...exposureBySymbol].map(([symbol, value]) => ({
+      symbol,
+      value,
+    })),
+  };
+}
+
+function addCompanyExposure(
+  exposures: Map<string, number>,
+  rawSymbol: string,
+  value: number,
+): void {
+  const symbol = rawSymbol.toUpperCase();
+  exposures.set(symbol, (exposures.get(symbol) ?? 0) + value);
+}
+
+function evaluateExposureWarnings(ctx: Ctx, portfolioId: bigint): void {
+  const setting = ctx.db.exposure_limit.portfolio_id.find(portfolioId);
+  if (!setting) return;
+
+  const { portfolioValue, exposures } = calculateCompanyExposures(
+    ctx,
+    portfolioId,
+  );
+  const currentBreaches = new Set<string>();
+
+  for (const exposure of exposures) {
+    const percentage = portfolioValue > 0
+      ? exposure.value / portfolioValue * 100
+      : 0;
+    if (percentage <= setting.maximum_percentage) continue;
+
+    const key = `${portfolioId}:${exposure.symbol}`;
+    currentBreaches.add(key);
+    const existing = ctx.db.exposure_breach.key.find(key);
+    if (!existing) {
+      ctx.db.exposure_warning.insert({
+        id: 0n,
+        portfolio_id: portfolioId,
+        symbol: exposure.symbol,
+        percentage,
+        limit: setting.maximum_percentage,
+        exposure_value: exposure.value,
+        portfolio_value: portfolioValue,
+        created_at: ctx.timestamp,
+      });
+      ctx.db.exposure_breach.insert({
+        key,
+        portfolio_id: portfolioId,
+        symbol: exposure.symbol,
+        percentage,
+      });
+    } else {
+      ctx.db.exposure_breach.key.update({ ...existing, percentage });
+    }
+  }
+
+  for (const breach of ctx.db.exposure_breach.portfolio_id.filter(portfolioId)) {
+    if (!currentBreaches.has(breach.key)) {
+      ctx.db.exposure_breach.key.delete(breach.key);
+    }
+  }
+  trimWarningHistory(ctx, portfolioId);
+}
+
+function trimWarningHistory(ctx: Ctx, portfolioId: bigint): void {
+  const warnings = [
+    ...ctx.db.exposure_warning.portfolio_id.filter(portfolioId),
+  ].sort((left, right) => {
+    const leftTime = left.created_at.microsSinceUnixEpoch;
+    const rightTime = right.created_at.microsSinceUnixEpoch;
+    return leftTime < rightTime ? -1 : leftTime > rightTime ? 1 : 0;
+  });
+
+  for (const warning of warnings.slice(0, Math.max(0, warnings.length - 20))) {
+    ctx.db.exposure_warning.id.delete(warning.id);
   }
 }
 

@@ -3,6 +3,7 @@ import ConnectionStatus, {
   type ConnectionState,
 } from "../components/ConnectionStatus.tsx";
 import ExposureBreakdown from "../components/ExposureBreakdown.tsx";
+import ExposureWarningPanel from "../components/ExposureWarningPanel.tsx";
 import GeneratedSecret from "../components/GeneratedSecret.tsx";
 import PortfolioAccess from "../components/PortfolioAccess.tsx";
 import PortfolioSummary from "../components/PortfolioSummary.tsx";
@@ -22,6 +23,8 @@ import { type DbConnection, tables } from "../src/module_bindings/index.ts";
 import type {
   Asset,
   EtfHolding,
+  ExposureLimit,
+  ExposureWarning,
   Position,
   Price,
   TestPriceFeed,
@@ -43,6 +46,10 @@ export default function PortfolioApp() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [prices, setPrices] = useState<Price[]>([]);
   const [etfHoldings, setEtfHoldings] = useState<EtfHolding[]>([]);
+  const [exposureLimits, setExposureLimits] = useState<ExposureLimit[]>([]);
+  const [exposureWarnings, setExposureWarnings] = useState<ExposureWarning[]>(
+    [],
+  );
   const [testPriceFeeds, setTestPriceFeeds] = useState<TestPriceFeed[]>([]);
   const [symbol, setSymbol] = useState("");
   const [assetType, setAssetType] = useState("stock");
@@ -58,6 +65,8 @@ export default function PortfolioApp() {
   const [changingTestPrices, setChangingTestPrices] = useState(false);
   const [testPriceError, setTestPriceError] = useState<string>();
   const [exposureError, setExposureError] = useState<string>();
+  const [warningError, setWarningError] = useState<string>();
+  const [savingWarningLimit, setSavingWarningLimit] = useState(false);
   const [authenticating, setAuthenticating] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [removingId, setRemovingId] = useState<bigint>();
@@ -76,6 +85,10 @@ export default function PortfolioApp() {
           setPositions([...activeConnection.db.myPositions.iter()]);
           setPrices([...activeConnection.db.myPrices.iter()]);
           setEtfHoldings([...activeConnection.db.etfHolding.iter()]);
+          setExposureLimits([...activeConnection.db.myExposureLimit.iter()]);
+          setExposureWarnings([
+            ...activeConnection.db.myExposureWarnings.iter(),
+          ]);
           setTestPriceFeeds([
             ...activeConnection.db.myTestPriceFeed.iter(),
           ]);
@@ -103,6 +116,12 @@ export default function PortfolioApp() {
         activeConnection.db.etfHolding.onInsert(syncPortfolio);
         activeConnection.db.etfHolding.onDelete(syncPortfolio);
         activeConnection.db.etfHolding.onUpdate(syncPortfolio);
+        activeConnection.db.myExposureLimit.onInsert(syncPortfolio);
+        activeConnection.db.myExposureLimit.onDelete(syncPortfolio);
+        activeConnection.db.myExposureLimit.onUpdate(syncPortfolio);
+        activeConnection.db.myExposureWarnings.onInsert(syncPortfolio);
+        activeConnection.db.myExposureWarnings.onDelete(syncPortfolio);
+        activeConnection.db.myExposureWarnings.onUpdate(syncPortfolio);
 
         activeConnection.subscriptionBuilder()
           .onApplied(() => {
@@ -132,6 +151,8 @@ export default function PortfolioApp() {
             tables.myPrices,
             tables.myTestPriceFeed,
             tables.etfHolding,
+            tables.myExposureLimit,
+            tables.myExposureWarnings,
           ]);
       },
       onDisconnected(error) {
@@ -306,6 +327,28 @@ export default function PortfolioApp() {
     }
   }
 
+  async function saveExposureLimit(maximumPercentage: number) {
+    if (!connection || !hasPortfolio) return;
+    if (
+      !Number.isFinite(maximumPercentage) ||
+      maximumPercentage < 1 ||
+      maximumPercentage > 100
+    ) {
+      setWarningError("Choose a percentage between 1 and 100.");
+      return;
+    }
+
+    setSavingWarningLimit(true);
+    setWarningError(undefined);
+    try {
+      await connection.reducers.setExposureLimit({ maximumPercentage });
+    } catch (error) {
+      setWarningError(getErrorMessage(error, "Could not save the limit."));
+    } finally {
+      setSavingWarningLimit(false);
+    }
+  }
+
   const ready = status === "connected" && subscriptionReady;
 
   return (
@@ -370,6 +413,10 @@ export default function PortfolioApp() {
                 changingTestPrices={changingTestPrices}
                 testPriceError={testPriceError}
                 exposureError={exposureError}
+                exposureLimit={exposureLimits[0]}
+                exposureWarnings={exposureWarnings}
+                warningError={warningError}
+                savingWarningLimit={savingWarningLimit}
                 removingId={removingId}
                 onSymbolChange={setSymbol}
                 onAssetTypeChange={setAssetType}
@@ -379,6 +426,7 @@ export default function PortfolioApp() {
                 onRemove={removePosition}
                 onSavePrice={savePrice}
                 onToggleTestPrices={toggleTestPrices}
+                onSaveExposureLimit={saveExposureLimit}
               />
             </>
           )}
@@ -409,6 +457,10 @@ interface PortfolioDashboardProps {
   changingTestPrices: boolean;
   testPriceError?: string;
   exposureError?: string;
+  exposureLimit?: ExposureLimit;
+  exposureWarnings: ExposureWarning[];
+  warningError?: string;
+  savingWarningLimit: boolean;
   removingId?: bigint;
   onSymbolChange: (value: string) => void;
   onAssetTypeChange: (value: string) => void;
@@ -418,6 +470,7 @@ interface PortfolioDashboardProps {
   onRemove: (positionId: bigint) => Promise<void>;
   onSavePrice: (assetId: bigint, value: number) => Promise<void>;
   onToggleTestPrices: () => Promise<void>;
+  onSaveExposureLimit: (maximumPercentage: number) => Promise<void>;
 }
 
 function PortfolioDashboard(props: PortfolioDashboardProps) {
@@ -439,6 +492,10 @@ function PortfolioDashboard(props: PortfolioDashboardProps) {
     changingTestPrices,
     testPriceError,
     exposureError,
+    exposureLimit,
+    exposureWarnings,
+    warningError,
+    savingWarningLimit,
     removingId,
   } = props;
 
@@ -727,6 +784,14 @@ function PortfolioDashboard(props: PortfolioDashboardProps) {
             {exposureError}
           </p>
         )}
+        <ExposureWarningPanel
+          exposures={exposureResult.exposures}
+          limit={exposureLimit}
+          warnings={exposureWarnings}
+          saving={savingWarningLimit}
+          error={warningError}
+          onSave={props.onSaveExposureLimit}
+        />
         <ExposureBreakdown
           exposures={exposureResult.exposures}
           portfolioValue={exposureResult.portfolioValue}
