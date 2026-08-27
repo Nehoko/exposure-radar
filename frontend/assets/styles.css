@@ -13,12 +13,14 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: clip;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: clip;
   background:
     radial-gradient(circle at 76% 20%, rgba(64, 99, 221, 0.18), transparent
     31rem),
@@ -604,6 +606,47 @@ h1 {
   gap: 18px;
 }
 
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.summary-card {
+  display: grid;
+  gap: 7px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(13, 19, 33, 0.66);
+}
+
+.summary-card > span {
+  color: #718096;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.summary-card strong {
+  color: #eef2fb;
+  font-size: clamp(1.25rem, 2.4vw, 1.75rem);
+  letter-spacing: -0.035em;
+}
+
+.summary-card small {
+  color: #58657a;
+  font-size: 0.68rem;
+}
+
+.portfolio-forms {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+}
+
 .panel {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
@@ -611,7 +654,8 @@ h1 {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
-.position-form {
+.position-form,
+.price-form {
   display: grid;
   align-content: start;
   gap: 17px;
@@ -654,19 +698,23 @@ h1 {
   font-weight: 750;
 }
 
-.position-form label {
+.position-form label,
+.price-form label {
   display: grid;
   gap: 7px;
 }
 
-.position-form label > span {
+.position-form label > span,
+.price-form label > span {
   color: #8f9bb0;
   font-size: 0.72rem;
   font-weight: 650;
 }
 
 .position-form input,
-.position-form select {
+.position-form select,
+.price-form input,
+.price-form select {
   width: 100%;
   min-height: 44px;
   padding: 0 12px;
@@ -680,12 +728,15 @@ h1 {
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
-.position-form input::placeholder {
+.position-form input::placeholder,
+.price-form input::placeholder {
   color: #4f5b6f;
 }
 
 .position-form input:focus,
-.position-form select:focus {
+.position-form select:focus,
+.price-form input:focus,
+.price-form select:focus {
   border-color: rgba(139, 162, 255, 0.6);
   box-shadow: 0 0 0 3px rgba(87, 116, 229, 0.13);
 }
@@ -795,6 +846,19 @@ h1 {
   white-space: nowrap;
 }
 
+.value-positive {
+  color: #63d7a7 !important;
+}
+
+.value-negative {
+  color: #ef8f8f !important;
+}
+
+.missing-value {
+  color: #9c8055;
+  font-size: 0.7rem;
+}
+
 .positions-table th:first-child,
 .positions-table td:first-child {
   padding-left: 25px;
@@ -893,6 +957,10 @@ footer {
     grid-template-columns: 1fr;
   }
 
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
   .access-section {
     grid-template-columns: 1fr;
     min-height: auto;
@@ -959,6 +1027,7 @@ footer {
   }
 
   .position-form,
+  .price-form,
   .positions-heading {
     padding-right: 18px;
     padding-left: 18px;

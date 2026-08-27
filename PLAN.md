@@ -44,11 +44,11 @@ unknown identity cannot read it.
 
 Goal: Calculate the current value and simple profit or loss.
 
-- [ ] Add a `price` table.
-- [ ] Add a small form for updating a price manually.
-- [ ] Calculate the value of every position.
-- [ ] Show the total portfolio value.
-- [ ] Show simple profit or loss.
+- [x] Add a `price` table.
+- [x] Add a small form for updating a price manually.
+- [x] Calculate the value of every position.
+- [x] Show the total portfolio value.
+- [x] Show simple profit or loss.
 
 Done when: changing a price immediately updates all totals.
 

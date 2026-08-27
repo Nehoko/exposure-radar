@@ -64,8 +64,8 @@ See [PLAN.md](PLAN.md) for small development milestones.
 
 ## Project status
 
-Milestone 2 is complete. A user can create a private portfolio, add positions,
-and remove them.
+Milestone 3 is complete. A user can create a private portfolio, add positions,
+enter current prices, and see portfolio value and simple profit or loss.
 
 ## Portfolio secret
 

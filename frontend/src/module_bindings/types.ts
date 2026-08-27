@@ -28,6 +28,9 @@ export type MyPortfolio = __Infer<typeof MyPortfolio>;
 export const MyPositions = __t.object("MyPositions", {});
 export type MyPositions = __Infer<typeof MyPositions>;
 
+export const MyPrices = __t.object("MyPrices", {});
+export type MyPrices = __Infer<typeof MyPrices>;
+
 export const Person = __t.object("Person", {
   name: __t.string(),
 });
@@ -61,3 +64,11 @@ export const Position = __t.object("Position", {
   portfolioId: __t.u64(),
 });
 export type Position = __Infer<typeof Position>;
+
+export const Price = __t.object("Price", {
+  assetId: __t.u64(),
+  portfolioId: __t.u64(),
+  value: __t.f64(),
+  updatedAt: __t.timestamp(),
+});
+export type Price = __Infer<typeof Price>;

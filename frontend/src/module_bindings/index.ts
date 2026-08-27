@@ -41,6 +41,7 @@ import CreatePortfolioReducer from "./create_portfolio_reducer";
 import LogoutPortfolioReducer from "./logout_portfolio_reducer";
 import RemovePositionReducer from "./remove_position_reducer";
 import SayHelloReducer from "./say_hello_reducer";
+import SetPriceReducer from "./set_price_reducer";
 
 // Import all procedure arg schemas
 
@@ -48,6 +49,7 @@ import SayHelloReducer from "./say_hello_reducer";
 import MyAssetsRow from "./my_assets_table";
 import MyPortfolioRow from "./my_portfolio_table";
 import MyPositionsRow from "./my_positions_table";
+import MyPricesRow from "./my_prices_table";
 import PersonRow from "./person_table";
 
 /** Type-only namespace exports for generated type groups. */
@@ -82,6 +84,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyPositionsRow),
+  myPrices: __table({
+    name: 'my_prices',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyPricesRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
@@ -93,6 +102,7 @@ const reducersSchema = __reducers(
   __reducerSchema("logout_portfolio", LogoutPortfolioReducer),
   __reducerSchema("remove_position", RemovePositionReducer),
   __reducerSchema("say_hello", SayHelloReducer),
+  __reducerSchema("set_price", SetPriceReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

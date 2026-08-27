@@ -4,12 +4,18 @@ import ConnectionStatus, {
 } from "../components/ConnectionStatus.tsx";
 import GeneratedSecret from "../components/GeneratedSecret.tsx";
 import PortfolioAccess from "../components/PortfolioAccess.tsx";
+import PortfolioSummary from "../components/PortfolioSummary.tsx";
+import PriceEditor from "../components/PriceEditor.tsx";
 import {
   connectToSpacetimeDB,
   forgetSpacetimeDBToken,
 } from "../lib/spacetimedb.ts";
+import {
+  calculatePortfolioTotals,
+  calculatePositionMetrics,
+} from "../lib/portfolio.ts";
 import { type DbConnection, tables } from "../src/module_bindings/index.ts";
-import type { Asset, Position } from "../src/module_bindings/types.ts";
+import type { Asset, Position, Price } from "../src/module_bindings/types.ts";
 
 const assetTypeLabels: Record<string, string> = {
   stock: "Stock",
@@ -25,15 +31,18 @@ export default function PortfolioApp() {
   const [hasPortfolio, setHasPortfolio] = useState(false);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
+  const [prices, setPrices] = useState<Price[]>([]);
   const [symbol, setSymbol] = useState("");
   const [assetType, setAssetType] = useState("stock");
   const [amount, setAmount] = useState("");
   const [purchasePrice, setPurchasePrice] = useState("");
   const [formError, setFormError] = useState<string>();
+  const [priceError, setPriceError] = useState<string>();
   const [accessError, setAccessError] = useState<string>();
   const [connectionError, setConnectionError] = useState<string>();
   const [generatedToken, setGeneratedToken] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
+  const [savingPrice, setSavingPrice] = useState(false);
   const [authenticating, setAuthenticating] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [removingId, setRemovingId] = useState<bigint>();
@@ -50,6 +59,7 @@ export default function PortfolioApp() {
           setHasPortfolio(activeConnection.db.myPortfolio.count() > 0n);
           setAssets([...activeConnection.db.myAssets.iter()]);
           setPositions([...activeConnection.db.myPositions.iter()]);
+          setPrices([...activeConnection.db.myPrices.iter()]);
         };
 
         setConnection(activeConnection);
@@ -65,6 +75,9 @@ export default function PortfolioApp() {
         activeConnection.db.myPositions.onInsert(syncPortfolio);
         activeConnection.db.myPositions.onDelete(syncPortfolio);
         activeConnection.db.myPositions.onUpdate(syncPortfolio);
+        activeConnection.db.myPrices.onInsert(syncPortfolio);
+        activeConnection.db.myPrices.onDelete(syncPortfolio);
+        activeConnection.db.myPrices.onUpdate(syncPortfolio);
 
         activeConnection.subscriptionBuilder()
           .onApplied(() => {
@@ -81,6 +94,7 @@ export default function PortfolioApp() {
             tables.myPortfolio,
             tables.myAssets,
             tables.myPositions,
+            tables.myPrices,
           ]);
       },
       onDisconnected(error) {
@@ -106,6 +120,11 @@ export default function PortfolioApp() {
   const assetsById = useMemo(
     () => new Map(assets.map((asset) => [asset.id, asset])),
     [assets],
+  );
+
+  const pricesByAssetId = useMemo(
+    () => new Map(prices.map((price) => [price.assetId, price])),
+    [prices],
   );
 
   async function authenticatePortfolio(token: string) {
@@ -207,6 +226,25 @@ export default function PortfolioApp() {
     }
   }
 
+  async function savePrice(assetId: bigint, value: number) {
+    if (!connection || !hasPortfolio) return;
+
+    if (!Number.isFinite(value) || value < 0) {
+      setPriceError("Price cannot be negative.");
+      return;
+    }
+
+    setSavingPrice(true);
+    setPriceError(undefined);
+    try {
+      await connection.reducers.setPrice({ assetId, value });
+    } catch (error) {
+      setPriceError(getErrorMessage(error, "Could not save the price."));
+    } finally {
+      setSavingPrice(false);
+    }
+  }
+
   const ready = status === "connected" && subscriptionReady;
 
   return (
@@ -254,14 +292,18 @@ export default function PortfolioApp() {
                 />
               )}
               <PortfolioDashboard
+                assets={assets}
                 assetsById={assetsById}
                 positions={positions}
+                pricesByAssetId={pricesByAssetId}
                 symbol={symbol}
                 assetType={assetType}
                 amount={amount}
                 purchasePrice={purchasePrice}
                 formError={formError}
+                priceError={priceError}
                 submitting={submitting}
+                savingPrice={savingPrice}
                 removingId={removingId}
                 onSymbolChange={setSymbol}
                 onAssetTypeChange={setAssetType}
@@ -269,6 +311,7 @@ export default function PortfolioApp() {
                 onPurchasePriceChange={setPurchasePrice}
                 onAdd={addPosition}
                 onRemove={removePosition}
+                onSavePrice={savePrice}
               />
             </>
           )}
@@ -282,14 +325,18 @@ export default function PortfolioApp() {
 }
 
 interface PortfolioDashboardProps {
+  assets: Asset[];
   assetsById: Map<bigint, Asset>;
   positions: Position[];
+  pricesByAssetId: Map<bigint, Price>;
   symbol: string;
   assetType: string;
   amount: string;
   purchasePrice: string;
   formError?: string;
+  priceError?: string;
   submitting: boolean;
+  savingPrice: boolean;
   removingId?: bigint;
   onSymbolChange: (value: string) => void;
   onAssetTypeChange: (value: string) => void;
@@ -297,20 +344,27 @@ interface PortfolioDashboardProps {
   onPurchasePriceChange: (value: string) => void;
   onAdd: (event: SubmitEvent) => Promise<void>;
   onRemove: (positionId: bigint) => Promise<void>;
+  onSavePrice: (assetId: bigint, value: number) => Promise<void>;
 }
 
 function PortfolioDashboard(props: PortfolioDashboardProps) {
   const {
+    assets,
     assetsById,
     positions,
+    pricesByAssetId,
     symbol,
     assetType,
     amount,
     purchasePrice,
     formError,
+    priceError,
     submitting,
+    savingPrice,
     removingId,
   } = props;
+
+  const totals = calculatePortfolioTotals(positions, pricesByAssetId);
 
   return (
     <>
@@ -320,12 +374,12 @@ function PortfolioDashboard(props: PortfolioDashboardProps) {
           <h1>See what you really own.</h1>
           <p class="hero-text">
             Save your stocks, ETFs, and crypto in one place. Exposure Radar
-            keeps the list private and in sync through SpacetimeDB.
+            calculates current value and profit as your prices change.
           </p>
           <div class="hero-actions">
             <a class="primary-action" href="#portfolio">Add a position</a>
             <span class="helper-text">
-              Prices and calculations come in the next milestone.
+              Prices update every connected browser immediately.
             </span>
           </div>
         </div>
@@ -342,8 +396,8 @@ function PortfolioDashboard(props: PortfolioDashboardProps) {
             <span class="radar-point point-three" />
           </div>
           <div class="radar-label">
-            <span>Saved positions</span>
-            <strong>{positions.length}</strong>
+            <span>Current value</span>
+            <strong>{formatPrice(totals.currentValue)}</strong>
           </div>
         </div>
       </section>
@@ -352,90 +406,108 @@ function PortfolioDashboard(props: PortfolioDashboardProps) {
         <div class="section-heading">
           <div>
             <p class="eyebrow">Your portfolio</p>
-            <h2>Add and manage positions</h2>
+            <h2>Value and manage positions</h2>
           </div>
           <p>Private live data</p>
         </div>
 
+        <PortfolioSummary
+          currentValue={totals.currentValue}
+          investedValue={totals.investedValue}
+          profitLoss={totals.profitLoss}
+          pricedPositions={totals.pricedPositions}
+          totalPositions={positions.length}
+        />
+
         <div class="portfolio-layout">
-          <form class="position-form panel" onSubmit={props.onAdd}>
-            <div class="panel-heading">
-              <span class="step-number">01</span>
-              <div>
-                <h3>Add a position</h3>
-                <p>Enter what you bought and its purchase price.</p>
+          <div class="portfolio-forms">
+            <form class="position-form panel" onSubmit={props.onAdd}>
+              <div class="panel-heading">
+                <span class="step-number">01</span>
+                <div>
+                  <h3>Add a position</h3>
+                  <p>Enter what you bought and its purchase price.</p>
+                </div>
               </div>
-            </div>
 
-            <label>
-              <span>Symbol</span>
-              <input
-                name="symbol"
-                value={symbol}
-                onInput={(event) =>
-                  props.onSymbolChange(event.currentTarget.value)}
-                placeholder="VWCE"
-                autocomplete="off"
-                maxlength={16}
-                required
-              />
-            </label>
-
-            <label>
-              <span>Asset type</span>
-              <select
-                name="assetType"
-                value={assetType}
-                onChange={(event) =>
-                  props.onAssetTypeChange(event.currentTarget.value)}
-              >
-                <option value="stock">Stock</option>
-                <option value="etf">ETF</option>
-                <option value="crypto">Crypto</option>
-              </select>
-            </label>
-
-            <div class="form-row">
               <label>
-                <span>Amount</span>
+                <span>Symbol</span>
                 <input
-                  name="amount"
-                  type="number"
-                  value={amount}
+                  name="symbol"
+                  value={symbol}
                   onInput={(event) =>
-                    props.onAmountChange(event.currentTarget.value)}
-                  placeholder="10"
-                  min="0"
-                  step="any"
+                    props.onSymbolChange(event.currentTarget.value)}
+                  placeholder="VWCE"
+                  autocomplete="off"
+                  maxlength={16}
                   required
                 />
               </label>
+
               <label>
-                <span>Purchase price (USD)</span>
-                <input
-                  name="purchasePrice"
-                  type="number"
-                  value={purchasePrice}
-                  onInput={(event) =>
-                    props.onPurchasePriceChange(event.currentTarget.value)}
-                  placeholder="125.50"
-                  min="0"
-                  step="any"
-                  required
-                />
+                <span>Asset type</span>
+                <select
+                  name="assetType"
+                  value={assetType}
+                  onChange={(event) =>
+                    props.onAssetTypeChange(event.currentTarget.value)}
+                >
+                  <option value="stock">Stock</option>
+                  <option value="etf">ETF</option>
+                  <option value="crypto">Crypto</option>
+                </select>
               </label>
-            </div>
 
-            {formError && <p class="form-error" role="alert">{formError}</p>}
+              <div class="form-row">
+                <label>
+                  <span>Amount</span>
+                  <input
+                    name="amount"
+                    type="number"
+                    value={amount}
+                    onInput={(event) =>
+                      props.onAmountChange(event.currentTarget.value)}
+                    placeholder="10"
+                    min="0"
+                    step="any"
+                    required
+                  />
+                </label>
+                <label>
+                  <span>Purchase price (USD)</span>
+                  <input
+                    name="purchasePrice"
+                    type="number"
+                    value={purchasePrice}
+                    onInput={(event) =>
+                      props.onPurchasePriceChange(event.currentTarget.value)}
+                    placeholder="125.50"
+                    min="0"
+                    step="any"
+                    required
+                  />
+                </label>
+              </div>
 
-            <button class="submit-button" type="submit" disabled={submitting}>
-              {submitting ? "Adding…" : "Add position"}
-            </button>
-          </form>
+              {formError && <p class="form-error" role="alert">{formError}</p>}
+
+              <button class="submit-button" type="submit" disabled={submitting}>
+                {submitting ? "Adding…" : "Add position"}
+              </button>
+            </form>
+
+            <PriceEditor
+              assets={assets}
+              pricesByAssetId={pricesByAssetId}
+              error={priceError}
+              submitting={savingPrice}
+              onSave={props.onSavePrice}
+            />
+          </div>
 
           <div class="positions-panel panel">
             <div class="panel-heading positions-heading">
-              <span class="step-number">02</span>
+              <span class="step-number">03</span>
               <div>
                 <h3>Saved positions</h3>
                 <p>
@@ -464,6 +536,9 @@ function PortfolioDashboard(props: PortfolioDashboardProps) {
                         <th>Asset</th>
                         <th>Amount</th>
                         <th>Purchase price</th>
+                        <th>Current price</th>
+                        <th>Value</th>
+                        <th>Profit / loss</th>
                         <th>
                           <span class="visually-hidden">Actions</span>
                         </th>
@@ -472,6 +547,10 @@ function PortfolioDashboard(props: PortfolioDashboardProps) {
                     <tbody>
                       {positions.map((position) => {
                         const asset = assetsById.get(position.assetId);
+                        const metrics = calculatePositionMetrics(
+                          position,
+                          pricesByAssetId,
+                        );
                         const rowIsRemoving = removingId === position.id;
                         return (
                           <tr key={String(position.id)}>
@@ -486,6 +565,27 @@ function PortfolioDashboard(props: PortfolioDashboardProps) {
                             </td>
                             <td>{formatAmount(position.amount)}</td>
                             <td>{formatPrice(position.purchasePrice)}</td>
+                            <td>
+                              {metrics.currentPrice !== undefined
+                                ? formatPrice(metrics.currentPrice)
+                                : <span class="missing-value">Not set</span>}
+                            </td>
+                            <td>
+                              {metrics.currentValue === undefined
+                                ? "—"
+                                : formatPrice(metrics.currentValue)}
+                            </td>
+                            <td
+                              class={metrics.profitLoss === undefined
+                                ? ""
+                                : metrics.profitLoss >= 0
+                                ? "value-positive"
+                                : "value-negative"}
+                            >
+                              {metrics.profitLoss === undefined
+                                ? "—"
+                                : formatSignedPrice(metrics.profitLoss)}
+                            </td>
                             <td>
                               <button
                                 class="remove-button"
@@ -546,6 +646,10 @@ function formatPrice(value: number): string {
     currency: "USD",
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function formatSignedPrice(value: number): string {
+  return `${value > 0 ? "+" : ""}${formatPrice(value)}`;
 }
 
 function getErrorMessage(error: unknown, fallback: string): string {

@@ -8,6 +8,7 @@
     "build": "deno task --cwd frontend build",
     "start": "deno task --cwd frontend start",
     "check": "deno task --cwd frontend check && spacetime build --module-path spacetimedb",
+    "test": "deno task --cwd frontend test",
     "spacetime:generate": "spacetime generate --lang typescript --out-dir frontend/src/module_bindings --module-path spacetimedb",
     "spacetime:publish:local": "spacetime publish --module-path spacetimedb --server local",
     "spacetime:publish": "spacetime publish --module-path spacetimedb --server maincloud"

@@ -3,6 +3,7 @@
     "dev": "vite",
     "build": "vite build",
     "start": "deno serve -A _fresh/server.js",
+    "test": "deno test",
     "check": "deno fmt --check . && deno lint . && deno check --unstable-sloppy-imports"
   },
   "lint": {

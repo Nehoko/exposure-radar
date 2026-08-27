@@ -39,6 +39,16 @@ const position = table(
   },
 );
 
+const price = table(
+  { name: "price" },
+  {
+    asset_id: t.u64().primaryKey(),
+    portfolio_id: t.u64().index("btree"),
+    value: t.f64(),
+    updated_at: t.timestamp(),
+  },
+);
+
 const portfolio = table(
   { name: "portfolio" },
   { id: t.u64().primaryKey().autoInc() },
@@ -66,6 +76,7 @@ const spacetimedb = schema({
   person,
   asset,
   position,
+  price,
   portfolio,
   portfolio_credential,
   portfolio_access,
@@ -104,6 +115,17 @@ export const myPositions = spacetimedb.view(
     const access = ctx.db.portfolio_access.identity.find(ctx.sender);
     return access
       ? [...ctx.db.position.portfolio_id.filter(access.portfolio_id)]
+      : [];
+  },
+);
+
+export const myPrices = spacetimedb.view(
+  { name: "my_prices", public: true },
+  t.array(price.rowType),
+  (ctx) => {
+    const access = ctx.db.portfolio_access.identity.find(ctx.sender);
+    return access
+      ? [...ctx.db.price.portfolio_id.filter(access.portfolio_id)]
       : [];
   },
 );
@@ -261,6 +283,38 @@ export const removePosition = spacetimedb.reducer(
       throw new SenderError("You cannot remove this position");
     }
     ctx.db.position.id.delete(positionId);
+  },
+);
+
+export const setPrice = spacetimedb.reducer(
+  {
+    assetId: t.u64(),
+    value: t.f64(),
+  },
+  (ctx, { assetId, value }) => {
+    const portfolioId = requirePortfolioId(ctx);
+    if (!Number.isFinite(value) || value < 0) {
+      throw new SenderError("Price cannot be negative");
+    }
+
+    const asset = ctx.db.asset.id.find(assetId);
+    if (!asset || asset.portfolio_id !== portfolioId) {
+      throw new SenderError("Asset not found");
+    }
+
+    const existingPrice = ctx.db.price.asset_id.find(assetId);
+    const nextPrice = {
+      asset_id: assetId,
+      portfolio_id: portfolioId,
+      value,
+      updated_at: ctx.timestamp,
+    };
+
+    if (existingPrice) {
+      ctx.db.price.asset_id.update(nextPrice);
+    } else {
+      ctx.db.price.insert(nextPrice);
+    }
   },
 );
 
