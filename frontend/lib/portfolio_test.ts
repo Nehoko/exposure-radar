@@ -2,6 +2,7 @@ import { strictEqual } from "node:assert";
 import {
   calculatePortfolioTotals,
   calculatePositionMetrics,
+  getPriceMovement,
 } from "./portfolio.ts";
 
 Deno.test("calculates value and profit for a priced position", () => {
@@ -28,4 +29,10 @@ Deno.test("keeps missing prices out of value and profit", () => {
   strictEqual(totals.currentValue, 250);
   strictEqual(totals.profitLoss, 50);
   strictEqual(totals.pricedPositions, 1);
+});
+
+Deno.test("describes the latest price movement", () => {
+  strictEqual(getPriceMovement(0.01), "up");
+  strictEqual(getPriceMovement(-0.01), "down");
+  strictEqual(getPriceMovement(0), "flat");
 });

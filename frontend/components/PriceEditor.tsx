@@ -6,11 +6,13 @@ interface PriceEditorProps {
   pricesByAssetId: Map<bigint, Price>;
   error?: string;
   submitting: boolean;
+  locked: boolean;
   onSave: (assetId: bigint, value: number) => Promise<void>;
 }
 
 export default function PriceEditor(
-  { assets, pricesByAssetId, error, submitting, onSave }: PriceEditorProps,
+  { assets, pricesByAssetId, error, submitting, locked, onSave }:
+    PriceEditorProps,
 ) {
   const [selectedAssetId, setSelectedAssetId] = useState("");
   const [value, setValue] = useState("");
@@ -25,8 +27,13 @@ export default function PriceEditor(
     const selectedStillExists = assets.some((asset) =>
       String(asset.id) === selectedAssetId
     );
-    if (!selectedStillExists) selectAsset(String(assets[0].id));
-  }, [assets, pricesByAssetId]);
+    if (!selectedStillExists) {
+      selectAsset(String(assets[0].id));
+    } else if (locked) {
+      const currentPrice = pricesByAssetId.get(BigInt(selectedAssetId));
+      setValue(currentPrice ? String(currentPrice.value) : "");
+    }
+  }, [assets, pricesByAssetId, locked]);
 
   function selectAsset(assetId: string) {
     setSelectedAssetId(assetId);
@@ -47,7 +54,11 @@ export default function PriceEditor(
         <span class="step-number">02</span>
         <div>
           <h3>Update a price</h3>
-          <p>Enter the current market price manually.</p>
+          <p>
+            {locked
+              ? "Stop test prices to enter a price manually."
+              : "Enter the current market price manually."}
+          </p>
         </div>
       </div>
 
@@ -79,7 +90,7 @@ export default function PriceEditor(
           placeholder="125.50"
           min="0"
           step="any"
-          disabled={assets.length === 0}
+          disabled={assets.length === 0 || locked}
           required
         />
       </label>
@@ -89,7 +100,7 @@ export default function PriceEditor(
       <button
         class="submit-button"
         type="submit"
-        disabled={assets.length === 0 || submitting || value === ""}
+        disabled={assets.length === 0 || submitting || locked || value === ""}
       >
         {submitting ? "Saving…" : "Save current price"}
       </button>

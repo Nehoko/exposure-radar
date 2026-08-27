@@ -11,9 +11,6 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  assetId: __t.u64().primaryKey().name("asset_id"),
-  portfolioId: __t.u64().name("portfolio_id"),
-  value: __t.f64(),
-  updatedAt: __t.timestamp().name("updated_at"),
-  change: __t.f64(),
+  portfolioId: __t.u64().primaryKey().name("portfolio_id"),
+  isRunning: __t.bool().name("is_running"),
 });

@@ -42,6 +42,8 @@ import LogoutPortfolioReducer from "./logout_portfolio_reducer";
 import RemovePositionReducer from "./remove_position_reducer";
 import SayHelloReducer from "./say_hello_reducer";
 import SetPriceReducer from "./set_price_reducer";
+import StartTestPricesReducer from "./start_test_prices_reducer";
+import StopTestPricesReducer from "./stop_test_prices_reducer";
 
 // Import all procedure arg schemas
 
@@ -50,6 +52,7 @@ import MyAssetsRow from "./my_assets_table";
 import MyPortfolioRow from "./my_portfolio_table";
 import MyPositionsRow from "./my_positions_table";
 import MyPricesRow from "./my_prices_table";
+import MyTestPriceFeedRow from "./my_test_price_feed_table";
 import PersonRow from "./person_table";
 
 /** Type-only namespace exports for generated type groups. */
@@ -91,6 +94,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyPricesRow),
+  myTestPriceFeed: __table({
+    name: 'my_test_price_feed',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyTestPriceFeedRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
@@ -103,6 +113,8 @@ const reducersSchema = __reducers(
   __reducerSchema("remove_position", RemovePositionReducer),
   __reducerSchema("say_hello", SayHelloReducer),
   __reducerSchema("set_price", SetPriceReducer),
+  __reducerSchema("start_test_prices", StartTestPricesReducer),
+  __reducerSchema("stop_test_prices", StopTestPricesReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

@@ -31,6 +31,9 @@ export type MyPositions = __Infer<typeof MyPositions>;
 export const MyPrices = __t.object("MyPrices", {});
 export type MyPrices = __Infer<typeof MyPrices>;
 
+export const MyTestPriceFeed = __t.object("MyTestPriceFeed", {});
+export type MyTestPriceFeed = __Infer<typeof MyTestPriceFeed>;
+
 export const Person = __t.object("Person", {
   name: __t.string(),
 });
@@ -70,5 +73,19 @@ export const Price = __t.object("Price", {
   portfolioId: __t.u64(),
   value: __t.f64(),
   updatedAt: __t.timestamp(),
+  change: __t.f64(),
 });
 export type Price = __Infer<typeof Price>;
+
+export const TestPriceFeed = __t.object("TestPriceFeed", {
+  portfolioId: __t.u64(),
+  isRunning: __t.bool(),
+});
+export type TestPriceFeed = __Infer<typeof TestPriceFeed>;
+
+export const TestPriceTick = __t.object("TestPriceTick", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+  portfolioId: __t.u64(),
+});
+export type TestPriceTick = __Infer<typeof TestPriceTick>;

@@ -56,10 +56,10 @@ Done when: changing a price immediately updates all totals.
 
 Goal: Learn how realtime updates work without paying for market data.
 
-- [ ] Create a small test price generator.
-- [ ] Update prices every few seconds.
-- [ ] Show whether an asset is moving up or down.
-- [ ] Add a button to start or stop test prices.
+- [x] Create a small test price generator.
+- [x] Update prices every few seconds.
+- [x] Show whether an asset is moving up or down.
+- [x] Add a button to start or stop test prices.
 
 Done when: two open browser windows show the same changing prices and totals.
 

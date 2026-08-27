@@ -1,5 +1,6 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex, hexToBytes, utf8ToBytes } from "@noble/hashes/utils.js";
+import { ScheduleAt } from "spacetimedb";
 import {
   type InferSchema,
   type ReducerCtx,
@@ -46,6 +47,24 @@ const price = table(
     portfolio_id: t.u64().index("btree"),
     value: t.f64(),
     updated_at: t.timestamp(),
+    change: t.f64().default(0),
+  },
+);
+
+const test_price_feed = table(
+  { name: "test_price_feed" },
+  {
+    portfolio_id: t.u64().primaryKey(),
+    is_running: t.bool(),
+  },
+);
+
+const test_price_tick = table(
+  { name: "test_price_tick" },
+  {
+    scheduled_id: t.u64().primaryKey().autoInc(),
+    scheduled_at: t.scheduleAt(),
+    portfolio_id: t.u64().unique(),
   },
 );
 
@@ -77,6 +96,8 @@ const spacetimedb = schema({
   asset,
   position,
   price,
+  test_price_feed,
+  test_price_tick,
   portfolio,
   portfolio_credential,
   portfolio_access,
@@ -127,6 +148,20 @@ export const myPrices = spacetimedb.view(
     return access
       ? [...ctx.db.price.portfolio_id.filter(access.portfolio_id)]
       : [];
+  },
+);
+
+export const myTestPriceFeed = spacetimedb.view(
+  { name: "my_test_price_feed", public: true },
+  t.array(test_price_feed.rowType),
+  (ctx) => {
+    const access = ctx.db.portfolio_access.identity.find(ctx.sender);
+    if (!access) return [];
+
+    const feed = ctx.db.test_price_feed.portfolio_id.find(
+      access.portfolio_id,
+    );
+    return feed ? [feed] : [];
   },
 );
 
@@ -308,6 +343,7 @@ export const setPrice = spacetimedb.reducer(
       portfolio_id: portfolioId,
       value,
       updated_at: ctx.timestamp,
+      change: existingPrice ? value - existingPrice.value : 0,
     };
 
     if (existingPrice) {
@@ -317,6 +353,93 @@ export const setPrice = spacetimedb.reducer(
     }
   },
 );
+
+export const startTestPrices = spacetimedb.reducer((ctx) => {
+  const portfolioId = requirePortfolioId(ctx);
+  const feed = ctx.db.test_price_feed.portfolio_id.find(portfolioId);
+
+  if (feed) {
+    ctx.db.test_price_feed.portfolio_id.update({
+      ...feed,
+      is_running: true,
+    });
+  } else {
+    ctx.db.test_price_feed.insert({
+      portfolio_id: portfolioId,
+      is_running: true,
+    });
+  }
+
+  if (!ctx.db.test_price_tick.portfolio_id.find(portfolioId)) {
+    ctx.db.test_price_tick.insert({
+      scheduled_id: 0n,
+      scheduled_at: ScheduleAt.interval(5_000_000n),
+      portfolio_id: portfolioId,
+    });
+  }
+
+  updatePortfolioTestPrices(ctx, portfolioId);
+});
+
+export const stopTestPrices = spacetimedb.reducer((ctx) => {
+  const portfolioId = requirePortfolioId(ctx);
+  const feed = ctx.db.test_price_feed.portfolio_id.find(portfolioId);
+
+  if (feed) {
+    ctx.db.test_price_feed.portfolio_id.update({
+      ...feed,
+      is_running: false,
+    });
+  } else {
+    ctx.db.test_price_feed.insert({
+      portfolio_id: portfolioId,
+      is_running: false,
+    });
+  }
+
+  ctx.db.test_price_tick.portfolio_id.delete(portfolioId);
+});
+
+export const updateTestPrices = spacetimedb.reducer(
+  { onSchedule: test_price_tick },
+  { tick: test_price_tick.rowType },
+  (ctx, { tick }) => {
+    const feed = ctx.db.test_price_feed.portfolio_id.find(tick.portfolio_id);
+    if (!feed?.is_running) return;
+
+    updatePortfolioTestPrices(ctx, tick.portfolio_id);
+  },
+);
+
+function updatePortfolioTestPrices(ctx: Ctx, portfolioId: bigint): void {
+  for (const asset of ctx.db.asset.portfolio_id.filter(portfolioId)) {
+    const firstPosition =
+      ctx.db.position.asset_id.filter(asset.id).next().value;
+    if (!firstPosition) continue;
+
+    const existingPrice = ctx.db.price.asset_id.find(asset.id);
+    const previousValue = existingPrice?.value ??
+      Math.max(firstPosition.purchase_price, 0.01);
+    const movement = ctx.random.integerInRange(-100, 100) / 10_000;
+    const nextValue = Math.max(
+      0.01,
+      Math.round(previousValue * (1 + movement) * 10_000) / 10_000,
+    );
+    const nextPrice = {
+      asset_id: asset.id,
+      portfolio_id: portfolioId,
+      value: nextValue,
+      updated_at: ctx.timestamp,
+      change: nextValue - previousValue,
+    };
+
+    if (existingPrice) {
+      ctx.db.price.asset_id.update(nextPrice);
+    } else {
+      ctx.db.price.insert(nextPrice);
+    }
+  }
+}
 
 function requirePortfolioId(ctx: Ctx): bigint {
   const access = ctx.db.portfolio_access.identity.find(ctx.sender);

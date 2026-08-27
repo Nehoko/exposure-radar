@@ -27,6 +27,7 @@ The first useful version will be deliberately small. It will let a user:
 - create one portfolio;
 - add stocks, ETFs, and crypto manually;
 - enter or update prices manually;
+- run simulated prices that change every five seconds;
 - see the total portfolio value;
 - see simple profit or loss;
 - see direct and indirect exposure from supported ETFs;
@@ -64,8 +65,9 @@ See [PLAN.md](PLAN.md) for small development milestones.
 
 ## Project status
 
-Milestone 3 is complete. A user can create a private portfolio, add positions,
-enter current prices, and see portfolio value and simple profit or loss.
+Milestone 4 is complete. A user can create a private portfolio, add positions,
+enter prices manually, or run shared simulated prices that update portfolio
+value and profit or loss every five seconds.
 
 ## Portfolio secret
 

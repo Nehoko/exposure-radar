@@ -14,6 +14,8 @@ import LogoutPortfolioReducer from "../logout_portfolio_reducer";
 import RemovePositionReducer from "../remove_position_reducer";
 import SayHelloReducer from "../say_hello_reducer";
 import SetPriceReducer from "../set_price_reducer";
+import StartTestPricesReducer from "../start_test_prices_reducer";
+import StopTestPricesReducer from "../stop_test_prices_reducer";
 
 export type AddParams = __Infer<typeof AddReducer>;
 export type AddPositionParams = __Infer<typeof AddPositionReducer>;
@@ -23,3 +25,5 @@ export type LogoutPortfolioParams = __Infer<typeof LogoutPortfolioReducer>;
 export type RemovePositionParams = __Infer<typeof RemovePositionReducer>;
 export type SayHelloParams = __Infer<typeof SayHelloReducer>;
 export type SetPriceParams = __Infer<typeof SetPriceReducer>;
+export type StartTestPricesParams = __Infer<typeof StartTestPricesReducer>;
+export type StopTestPricesParams = __Infer<typeof StopTestPricesReducer>;

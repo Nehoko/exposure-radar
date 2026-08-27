@@ -6,6 +6,7 @@ import GeneratedSecret from "../components/GeneratedSecret.tsx";
 import PortfolioAccess from "../components/PortfolioAccess.tsx";
 import PortfolioSummary from "../components/PortfolioSummary.tsx";
 import PriceEditor from "../components/PriceEditor.tsx";
+import TestPriceControls from "../components/TestPriceControls.tsx";
 import {
   connectToSpacetimeDB,
   forgetSpacetimeDBToken,
@@ -13,9 +14,15 @@ import {
 import {
   calculatePortfolioTotals,
   calculatePositionMetrics,
+  getPriceMovement,
 } from "../lib/portfolio.ts";
 import { type DbConnection, tables } from "../src/module_bindings/index.ts";
-import type { Asset, Position, Price } from "../src/module_bindings/types.ts";
+import type {
+  Asset,
+  Position,
+  Price,
+  TestPriceFeed,
+} from "../src/module_bindings/types.ts";
 
 const assetTypeLabels: Record<string, string> = {
   stock: "Stock",
@@ -32,6 +39,7 @@ export default function PortfolioApp() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [prices, setPrices] = useState<Price[]>([]);
+  const [testPriceFeeds, setTestPriceFeeds] = useState<TestPriceFeed[]>([]);
   const [symbol, setSymbol] = useState("");
   const [assetType, setAssetType] = useState("stock");
   const [amount, setAmount] = useState("");
@@ -43,6 +51,8 @@ export default function PortfolioApp() {
   const [generatedToken, setGeneratedToken] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
   const [savingPrice, setSavingPrice] = useState(false);
+  const [changingTestPrices, setChangingTestPrices] = useState(false);
+  const [testPriceError, setTestPriceError] = useState<string>();
   const [authenticating, setAuthenticating] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [removingId, setRemovingId] = useState<bigint>();
@@ -60,6 +70,9 @@ export default function PortfolioApp() {
           setAssets([...activeConnection.db.myAssets.iter()]);
           setPositions([...activeConnection.db.myPositions.iter()]);
           setPrices([...activeConnection.db.myPrices.iter()]);
+          setTestPriceFeeds([
+            ...activeConnection.db.myTestPriceFeed.iter(),
+          ]);
         };
 
         setConnection(activeConnection);
@@ -78,6 +91,9 @@ export default function PortfolioApp() {
         activeConnection.db.myPrices.onInsert(syncPortfolio);
         activeConnection.db.myPrices.onDelete(syncPortfolio);
         activeConnection.db.myPrices.onUpdate(syncPortfolio);
+        activeConnection.db.myTestPriceFeed.onInsert(syncPortfolio);
+        activeConnection.db.myTestPriceFeed.onDelete(syncPortfolio);
+        activeConnection.db.myTestPriceFeed.onUpdate(syncPortfolio);
 
         activeConnection.subscriptionBuilder()
           .onApplied(() => {
@@ -95,6 +111,7 @@ export default function PortfolioApp() {
             tables.myAssets,
             tables.myPositions,
             tables.myPrices,
+            tables.myTestPriceFeed,
           ]);
       },
       onDisconnected(error) {
@@ -245,6 +262,30 @@ export default function PortfolioApp() {
     }
   }
 
+  async function toggleTestPrices() {
+    if (!connection || !hasPortfolio) return;
+
+    const running = testPriceFeeds[0]?.isRunning ?? false;
+    setChangingTestPrices(true);
+    setTestPriceError(undefined);
+    try {
+      if (running) {
+        await connection.reducers.stopTestPrices({});
+      } else {
+        await connection.reducers.startTestPrices({});
+      }
+    } catch (error) {
+      setTestPriceError(
+        getErrorMessage(
+          error,
+          `Could not ${running ? "stop" : "start"} prices.`,
+        ),
+      );
+    } finally {
+      setChangingTestPrices(false);
+    }
+  }
+
   const ready = status === "connected" && subscriptionReady;
 
   return (
@@ -304,6 +345,9 @@ export default function PortfolioApp() {
                 priceError={priceError}
                 submitting={submitting}
                 savingPrice={savingPrice}
+                testPricesRunning={testPriceFeeds[0]?.isRunning ?? false}
+                changingTestPrices={changingTestPrices}
+                testPriceError={testPriceError}
                 removingId={removingId}
                 onSymbolChange={setSymbol}
                 onAssetTypeChange={setAssetType}
@@ -312,6 +356,7 @@ export default function PortfolioApp() {
                 onAdd={addPosition}
                 onRemove={removePosition}
                 onSavePrice={savePrice}
+                onToggleTestPrices={toggleTestPrices}
               />
             </>
           )}
@@ -337,6 +382,9 @@ interface PortfolioDashboardProps {
   priceError?: string;
   submitting: boolean;
   savingPrice: boolean;
+  testPricesRunning: boolean;
+  changingTestPrices: boolean;
+  testPriceError?: string;
   removingId?: bigint;
   onSymbolChange: (value: string) => void;
   onAssetTypeChange: (value: string) => void;
@@ -345,6 +393,7 @@ interface PortfolioDashboardProps {
   onAdd: (event: SubmitEvent) => Promise<void>;
   onRemove: (positionId: bigint) => Promise<void>;
   onSavePrice: (assetId: bigint, value: number) => Promise<void>;
+  onToggleTestPrices: () => Promise<void>;
 }
 
 function PortfolioDashboard(props: PortfolioDashboardProps) {
@@ -361,6 +410,9 @@ function PortfolioDashboard(props: PortfolioDashboardProps) {
     priceError,
     submitting,
     savingPrice,
+    testPricesRunning,
+    changingTestPrices,
+    testPriceError,
     removingId,
   } = props;
 
@@ -501,13 +553,22 @@ function PortfolioDashboard(props: PortfolioDashboardProps) {
               pricesByAssetId={pricesByAssetId}
               error={priceError}
               submitting={savingPrice}
+              locked={testPricesRunning}
               onSave={props.onSavePrice}
+            />
+
+            <TestPriceControls
+              running={testPricesRunning}
+              submitting={changingTestPrices}
+              disabled={assets.length === 0}
+              error={testPriceError}
+              onToggle={props.onToggleTestPrices}
             />
           </div>
 
           <div class="positions-panel panel">
             <div class="panel-heading positions-heading">
-              <span class="step-number">03</span>
+              <span class="step-number">04</span>
               <div>
                 <h3>Saved positions</h3>
                 <p>
@@ -552,6 +613,9 @@ function PortfolioDashboard(props: PortfolioDashboardProps) {
                           pricesByAssetId,
                         );
                         const rowIsRemoving = removingId === position.id;
+                        const movement = getPriceMovement(
+                          pricesByAssetId.get(position.assetId)?.change ?? 0,
+                        );
                         return (
                           <tr key={String(position.id)}>
                             <td>
@@ -567,7 +631,19 @@ function PortfolioDashboard(props: PortfolioDashboardProps) {
                             <td>{formatPrice(position.purchasePrice)}</td>
                             <td>
                               {metrics.currentPrice !== undefined
-                                ? formatPrice(metrics.currentPrice)
+                                ? (
+                                  <span class="current-price">
+                                    {formatPrice(metrics.currentPrice)}
+                                    {movement !== "flat" && (
+                                      <span
+                                        class={`price-movement movement-${movement}`}
+                                        aria-label={`Price moved ${movement}`}
+                                      >
+                                        {movement === "up" ? "↑" : "↓"}
+                                      </span>
+                                    )}
+                                  </span>
+                                )
                                 : <span class="missing-value">Not set</span>}
                             </td>
                             <td>

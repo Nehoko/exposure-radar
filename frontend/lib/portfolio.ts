@@ -22,6 +22,14 @@ export interface PortfolioTotals {
   pricedPositions: number;
 }
 
+export type PriceMovement = "up" | "down" | "flat";
+
+export function getPriceMovement(change: number): PriceMovement {
+  if (change > 0) return "up";
+  if (change < 0) return "down";
+  return "flat";
+}
+
 export function calculatePositionMetrics(
   position: PositionValue,
   pricesByAssetId: Map<bigint, PriceValue>,
