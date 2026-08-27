@@ -17,11 +17,18 @@ export {
   updateTestPrices,
 } from "./price_reducers";
 export {
+  refreshRealPrices,
+  startRealPrices,
+  stopRealPrices,
+  updateRealPrices,
+} from "./real_prices";
+export {
   myAssets,
   myExposureLimit,
   myExposureWarnings,
   myPortfolio,
   myPositions,
   myPrices,
+  myRealPriceFeed,
   myTestPriceFeed,
 } from "./views";

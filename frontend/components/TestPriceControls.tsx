@@ -12,7 +12,7 @@ export default function TestPriceControls(
   return (
     <section class="test-price-panel panel" aria-live="polite">
       <div class="panel-heading test-price-heading">
-        <span class="step-number">03</span>
+        <span class="step-number">04</span>
         <div>
           <h3>Live test prices</h3>
           <p>Move every five seconds using simulated data.</p>

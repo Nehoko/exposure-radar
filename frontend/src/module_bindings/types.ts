@@ -72,6 +72,9 @@ export type MyPositions = __Infer<typeof MyPositions>;
 export const MyPrices = __t.object("MyPrices", {});
 export type MyPrices = __Infer<typeof MyPrices>;
 
+export const MyRealPriceFeed = __t.object("MyRealPriceFeed", {});
+export type MyRealPriceFeed = __Infer<typeof MyRealPriceFeed>;
+
 export const MyTestPriceFeed = __t.object("MyTestPriceFeed", {});
 export type MyTestPriceFeed = __Infer<typeof MyTestPriceFeed>;
 
@@ -115,8 +118,32 @@ export const Price = __t.object("Price", {
   value: __t.f64(),
   updatedAt: __t.timestamp(),
   change: __t.f64(),
+  source: __t.string(),
 });
 export type Price = __Infer<typeof Price>;
+
+export const RealPriceFeed = __t.object("RealPriceFeed", {
+  portfolioId: __t.u64(),
+  isRunning: __t.bool(),
+  lastAttemptAt: __t.option(__t.timestamp()),
+  lastSuccessAt: __t.option(__t.timestamp()),
+  message: __t.string(),
+});
+export type RealPriceFeed = __Infer<typeof RealPriceFeed>;
+
+export const RealPriceTick = __t.object("RealPriceTick", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+  portfolioId: __t.u64(),
+});
+export type RealPriceTick = __Infer<typeof RealPriceTick>;
+
+export const RefreshResult = __t.object("RefreshResult", {
+  updated: __t.u32(),
+  failed: __t.u32(),
+  message: __t.string(),
+});
+export type RefreshResult = __Infer<typeof RefreshResult>;
 
 export const TestPriceFeed = __t.object("TestPriceFeed", {
   portfolioId: __t.u64(),

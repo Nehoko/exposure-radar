@@ -1,5 +1,6 @@
 import {
   type InferSchema,
+  type ProcedureCtx,
   type ReducerCtx,
   schema,
   t,
@@ -31,6 +32,7 @@ export const price = table({ name: "price" }, {
   value: t.f64(),
   updated_at: t.timestamp(),
   change: t.f64().default(0),
+  source: t.string().default("manual"),
 });
 
 export const test_price_feed = table({ name: "test_price_feed" }, {
@@ -39,6 +41,20 @@ export const test_price_feed = table({ name: "test_price_feed" }, {
 });
 
 export const test_price_tick = table({ name: "test_price_tick" }, {
+  scheduled_id: t.u64().primaryKey().autoInc(),
+  scheduled_at: t.scheduleAt(),
+  portfolio_id: t.u64().unique(),
+});
+
+export const real_price_feed = table({ name: "real_price_feed" }, {
+  portfolio_id: t.u64().primaryKey(),
+  is_running: t.bool(),
+  last_attempt_at: t.option(t.timestamp()),
+  last_success_at: t.option(t.timestamp()),
+  message: t.string().default(""),
+});
+
+export const real_price_tick = table({ name: "real_price_tick" }, {
   scheduled_id: t.u64().primaryKey().autoInc(),
   scheduled_at: t.scheduleAt(),
   portfolio_id: t.u64().unique(),
@@ -98,6 +114,8 @@ const spacetimedb = schema({
   price,
   test_price_feed,
   test_price_tick,
+  real_price_feed,
+  real_price_tick,
   etf_holding,
   portfolio,
   portfolio_credential,
@@ -109,3 +127,4 @@ const spacetimedb = schema({
 
 export default spacetimedb;
 export type Ctx = ReducerCtx<InferSchema<typeof spacetimedb>>;
+export type ProcCtx = ProcedureCtx<InferSchema<typeof spacetimedb>>;

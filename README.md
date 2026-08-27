@@ -28,6 +28,8 @@ The first useful version will be deliberately small. It will let a user:
 - add stocks, ETFs, and crypto manually;
 - enter or update prices manually;
 - run simulated prices that change every five seconds;
+- fetch hourly market prices from Yahoo Finance, with CoinGecko as a crypto
+  fallback;
 - see the total portfolio value;
 - see simple profit or loss;
 - see direct and indirect exposure from supported ETFs;
@@ -66,9 +68,14 @@ See [PLAN.md](PLAN.md) for small development milestones.
 
 ## Project status
 
-Milestone 5 is complete. A user can create a private portfolio, add positions,
-run shared simulated prices, and see direct assets combined with sample company
-holdings inside VOO, QQQ, and VWCE.
+Milestone 6 is complete. A user can create a private portfolio, add positions,
+run shared simulated prices, see combined company exposure, and receive an
+immediate warning when one company exceeds a chosen limit.
+
+Milestone 7 is complete. Market-price support uses Yahoo Finance first for
+stocks, ETFs, and crypto. If Yahoo cannot price a cryptocurrency, the app tries
+CoinGecko. Prices refresh hourly while the feed is running and can also be
+refreshed manually. These free endpoints may be delayed or rate-limited.
 
 The ETF holdings are a small educational sample, not current market data.
 Holdings not included in the sample are shown as unanalysed ETF value.

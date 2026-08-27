@@ -6,6 +6,7 @@ import spacetimedb, {
   portfolio,
   position,
   price,
+  real_price_feed,
   test_price_feed,
 } from "./schema";
 
@@ -60,6 +61,17 @@ export const myTestPriceFeed = spacetimedb.view(
     const access = ctx.db.portfolio_access.identity.find(ctx.sender);
     if (!access) return [];
     const row = ctx.db.test_price_feed.portfolio_id.find(access.portfolio_id);
+    return row ? [row] : [];
+  },
+);
+
+export const myRealPriceFeed = spacetimedb.view(
+  { name: "my_real_price_feed", public: true },
+  t.array(real_price_feed.rowType),
+  (ctx) => {
+    const access = ctx.db.portfolio_access.identity.find(ctx.sender);
+    if (!access) return [];
+    const row = ctx.db.real_price_feed.portfolio_id.find(access.portfolio_id);
     return row ? [row] : [];
   },
 );

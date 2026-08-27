@@ -44,10 +44,13 @@ import RemovePositionReducer from "./remove_position_reducer";
 import SayHelloReducer from "./say_hello_reducer";
 import SetExposureLimitReducer from "./set_exposure_limit_reducer";
 import SetPriceReducer from "./set_price_reducer";
+import StartRealPricesReducer from "./start_real_prices_reducer";
 import StartTestPricesReducer from "./start_test_prices_reducer";
+import StopRealPricesReducer from "./stop_real_prices_reducer";
 import StopTestPricesReducer from "./stop_test_prices_reducer";
 
 // Import all procedure arg schemas
+import * as RefreshRealPricesProcedure from "./refresh_real_prices_procedure";
 
 // Import all table schema definitions
 import EtfHoldingRow from "./etf_holding_table";
@@ -57,6 +60,7 @@ import MyExposureWarningsRow from "./my_exposure_warnings_table";
 import MyPortfolioRow from "./my_portfolio_table";
 import MyPositionsRow from "./my_positions_table";
 import MyPricesRow from "./my_prices_table";
+import MyRealPriceFeedRow from "./my_real_price_feed_table";
 import MyTestPriceFeedRow from "./my_test_price_feed_table";
 import PersonRow from "./person_table";
 
@@ -130,6 +134,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyPricesRow),
+  myRealPriceFeed: __table({
+    name: 'my_real_price_feed',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRealPriceFeedRow),
   myTestPriceFeed: __table({
     name: 'my_test_price_feed',
     indexes: [
@@ -151,12 +162,15 @@ const reducersSchema = __reducers(
   __reducerSchema("say_hello", SayHelloReducer),
   __reducerSchema("set_exposure_limit", SetExposureLimitReducer),
   __reducerSchema("set_price", SetPriceReducer),
+  __reducerSchema("start_real_prices", StartRealPricesReducer),
   __reducerSchema("start_test_prices", StartTestPricesReducer),
+  __reducerSchema("stop_real_prices", StopRealPricesReducer),
   __reducerSchema("stop_test_prices", StopTestPricesReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */
 const proceduresSchema = __procedures(
+  __procedureSchema("refresh_real_prices", RefreshRealPricesProcedure.params, RefreshRealPricesProcedure.returnType),
 );
 
 type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "tables"> & {

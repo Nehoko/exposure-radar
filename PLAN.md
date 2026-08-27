@@ -91,11 +91,11 @@ Done when: a price or position change can create a warning immediately.
 
 Goal: Replace test prices with a small amount of real or delayed market data.
 
-- [ ] Compare free and paid data providers.
-- [ ] Choose one provider for a small experiment.
-- [ ] Import delayed prices for a few assets.
-- [ ] Handle missing or old prices clearly.
-- [ ] Keep manual prices as a fallback.
+- [x] Compare free and paid data providers.
+- [x] Use Yahoo first and CoinGecko as a crypto backup.
+- [x] Import delayed prices for a few assets.
+- [x] Handle missing or old prices clearly.
+- [x] Keep manual prices as a fallback.
 
 Done when: the app can update a few prices without manual input.
 

@@ -9,6 +9,7 @@ import type {
   ExposureWarning,
   Position,
   Price,
+  RealPriceFeed,
 } from "../src/module_bindings/types.ts";
 import AddPositionForm from "./AddPositionForm.tsx";
 import ExposureBreakdown from "./ExposureBreakdown.tsx";
@@ -16,6 +17,7 @@ import ExposureWarningPanel from "./ExposureWarningPanel.tsx";
 import PortfolioSummary from "./PortfolioSummary.tsx";
 import PositionsPanel from "./PositionsPanel.tsx";
 import PriceEditor from "./PriceEditor.tsx";
+import RealPriceControls from "./RealPriceControls.tsx";
 import TestPriceControls from "./TestPriceControls.tsx";
 
 export interface PortfolioDashboardProps {
@@ -23,6 +25,7 @@ export interface PortfolioDashboardProps {
   assetsById: Map<bigint, Asset>;
   positions: Position[];
   pricesByAssetId: Map<bigint, Price>;
+  realPriceFeed?: RealPriceFeed;
   etfHoldings: EtfHolding[];
   exposureLimit?: ExposureLimit;
   exposureWarnings: ExposureWarning[];
@@ -33,12 +36,15 @@ export interface PortfolioDashboardProps {
   formError?: string;
   priceError?: string;
   testPriceError?: string;
+  realPriceError?: string;
   exposureError?: string;
   warningError?: string;
   submitting: boolean;
   savingPrice: boolean;
   testPricesRunning: boolean;
   changingTestPrices: boolean;
+  changingRealPrices: boolean;
+  refreshingRealPrices: boolean;
   savingWarningLimit: boolean;
   removingId?: bigint;
   onSymbolChange: (value: string) => void;
@@ -49,6 +55,8 @@ export interface PortfolioDashboardProps {
   onRemove: (positionId: bigint) => Promise<void>;
   onSavePrice: (assetId: bigint, value: number) => Promise<void>;
   onToggleTestPrices: () => Promise<void>;
+  onToggleRealPrices: () => Promise<void>;
+  onRefreshRealPrices: () => Promise<void>;
   onSaveExposureLimit: (maximumPercentage: number) => Promise<void>;
 }
 
@@ -142,6 +150,15 @@ export default function PortfolioDashboard(props: PortfolioDashboardProps) {
               submitting={props.savingPrice}
               locked={props.testPricesRunning}
               onSave={props.onSavePrice}
+            />
+            <RealPriceControls
+              feed={props.realPriceFeed}
+              submitting={props.changingRealPrices}
+              refreshing={props.refreshingRealPrices}
+              disabled={props.assets.length === 0}
+              error={props.realPriceError}
+              onToggle={props.onToggleRealPrices}
+              onRefresh={props.onRefreshRealPrices}
             />
             <TestPriceControls
               running={props.testPricesRunning}

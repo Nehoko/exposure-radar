@@ -22,6 +22,7 @@ export const setPrice = spacetimedb.reducer(
       value,
       updated_at: ctx.timestamp,
       change: existing ? value - existing.value : 0,
+      source: "manual",
     };
     if (existing) ctx.db.price.asset_id.update(next);
     else ctx.db.price.insert(next);
@@ -32,6 +33,15 @@ export const setPrice = spacetimedb.reducer(
 export const startTestPrices = spacetimedb.reducer((ctx) => {
   const portfolioId = requirePortfolioId(ctx);
   setFeedState(ctx, portfolioId, true);
+  ctx.db.real_price_tick.portfolio_id.delete(portfolioId);
+  const realFeed = ctx.db.real_price_feed.portfolio_id.find(portfolioId);
+  if (realFeed?.is_running) {
+    ctx.db.real_price_feed.portfolio_id.update({
+      ...realFeed,
+      is_running: false,
+      message: "Real prices stopped",
+    });
+  }
   if (!ctx.db.test_price_tick.portfolio_id.find(portfolioId)) {
     ctx.db.test_price_tick.insert({
       scheduled_id: 0n,
@@ -83,6 +93,7 @@ function updatePortfolioTestPrices(ctx: Ctx, portfolioId: bigint): void {
       value: nextValue,
       updated_at: ctx.timestamp,
       change: nextValue - previousValue,
+      source: "test",
     };
     if (existing) ctx.db.price.asset_id.update(next);
     else ctx.db.price.insert(next);

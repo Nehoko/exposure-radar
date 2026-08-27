@@ -13,6 +13,7 @@ import type {
   ExposureWarning,
   Position,
   Price,
+  RealPriceFeed,
   TestPriceFeed,
 } from "../src/module_bindings/types.ts";
 
@@ -31,6 +32,7 @@ export function usePortfolioController() {
     [],
   );
   const [testPriceFeeds, setTestPriceFeeds] = useState<TestPriceFeed[]>([]);
+  const [realPriceFeeds, setRealPriceFeeds] = useState<RealPriceFeed[]>([]);
   const [symbol, setSymbol] = useState("");
   const [assetType, setAssetType] = useState("stock");
   const [amount, setAmount] = useState("");
@@ -43,7 +45,10 @@ export function usePortfolioController() {
   const [submitting, setSubmitting] = useState(false);
   const [savingPrice, setSavingPrice] = useState(false);
   const [changingTestPrices, setChangingTestPrices] = useState(false);
+  const [changingRealPrices, setChangingRealPrices] = useState(false);
+  const [refreshingRealPrices, setRefreshingRealPrices] = useState(false);
   const [testPriceError, setTestPriceError] = useState<string>();
+  const [realPriceError, setRealPriceError] = useState<string>();
   const [exposureError, setExposureError] = useState<string>();
   const [warningError, setWarningError] = useState<string>();
   const [savingWarningLimit, setSavingWarningLimit] = useState(false);
@@ -69,6 +74,9 @@ export function usePortfolioController() {
           ]);
           setTestPriceFeeds([
             ...activeConnection.db.myTestPriceFeed.iter(),
+          ]);
+          setRealPriceFeeds([
+            ...activeConnection.db.myRealPriceFeed.iter(),
           ]);
         };
 
@@ -108,6 +116,7 @@ export function usePortfolioController() {
             tables.myPositions,
             tables.myPrices,
             tables.myTestPriceFeed,
+            tables.myRealPriceFeed,
             tables.etfHolding,
             tables.myExposureLimit,
             tables.myExposureWarnings,
@@ -268,6 +277,45 @@ export function usePortfolioController() {
     }
   }
 
+  async function toggleRealPrices() {
+    if (!connection || !hasPortfolio) return;
+    const running = realPriceFeeds[0]?.isRunning ?? false;
+    setChangingRealPrices(true);
+    setRealPriceError(undefined);
+    try {
+      if (running) {
+        await connection.reducers.stopRealPrices({});
+      } else {
+        await connection.reducers.startRealPrices({});
+        await refreshRealPrices();
+      }
+    } catch (error) {
+      setRealPriceError(
+        getErrorMessage(
+          error,
+          `Could not ${running ? "stop" : "start"} market prices.`,
+        ),
+      );
+    } finally {
+      setChangingRealPrices(false);
+    }
+  }
+
+  async function refreshRealPrices() {
+    if (!connection || !hasPortfolio) return;
+    setRefreshingRealPrices(true);
+    setRealPriceError(undefined);
+    try {
+      await connection.procedures.refreshRealPrices({});
+    } catch (error) {
+      setRealPriceError(
+        getErrorMessage(error, "Could not refresh market prices."),
+      );
+    } finally {
+      setRefreshingRealPrices(false);
+    }
+  }
+
   async function saveExposureLimit(maximumPercentage: number) {
     if (!connection || !hasPortfolio) return;
     if (
@@ -293,6 +341,7 @@ export function usePortfolioController() {
     assetsById,
     positions,
     pricesByAssetId,
+    realPriceFeed: realPriceFeeds[0],
     etfHoldings,
     exposureLimit: exposureLimits[0],
     exposureWarnings,
@@ -303,12 +352,15 @@ export function usePortfolioController() {
     formError,
     priceError,
     testPriceError,
+    realPriceError,
     exposureError,
     warningError,
     submitting,
     savingPrice,
     testPricesRunning: testPriceFeeds[0]?.isRunning ?? false,
     changingTestPrices,
+    changingRealPrices,
+    refreshingRealPrices,
     savingWarningLimit,
     removingId,
     onSymbolChange: setSymbol,
@@ -319,6 +371,8 @@ export function usePortfolioController() {
     onRemove: removePosition,
     onSavePrice: savePrice,
     onToggleTestPrices: toggleTestPrices,
+    onToggleRealPrices: toggleRealPrices,
+    onRefreshRealPrices: refreshRealPrices,
     onSaveExposureLimit: saveExposureLimit,
   };
 
@@ -350,6 +404,7 @@ function registerTableListeners(
     connection.db.myPositions,
     connection.db.myPrices,
     connection.db.myTestPriceFeed,
+    connection.db.myRealPriceFeed,
     connection.db.etfHolding,
     connection.db.myExposureLimit,
     connection.db.myExposureWarnings,

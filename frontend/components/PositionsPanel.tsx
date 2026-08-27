@@ -22,7 +22,7 @@ export default function PositionsPanel(props: PositionsPanelProps) {
   return (
     <div class="positions-panel panel">
       <div class="panel-heading positions-heading">
-        <span class="step-number">04</span>
+        <span class="step-number">05</span>
         <div>
           <h3>Saved positions</h3>
           <p>
@@ -69,6 +69,7 @@ export default function PositionsPanel(props: PositionsPanelProps) {
                   const movement = getPriceMovement(
                     props.pricesByAssetId.get(position.assetId)?.change ?? 0,
                   );
+                  const price = props.pricesByAssetId.get(position.assetId);
                   const removing = props.removingId === position.id;
                   return (
                     <tr key={String(position.id)}>
@@ -96,6 +97,16 @@ export default function PositionsPanel(props: PositionsPanelProps) {
                                 >
                                   {movement === "up" ? "↑" : "↓"}
                                 </span>
+                              )}
+                              {price && (
+                                <small
+                                  class={`price-source ${
+                                    isStale(price) ? "is-stale" : ""
+                                  }`}
+                                >
+                                  {formatPriceSource(price.source)}
+                                  {isStale(price) ? " · old" : ""}
+                                </small>
                               )}
                             </span>
                           )}
@@ -142,6 +153,19 @@ function formatAmount(value: number): string {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 8 }).format(
     value,
   );
+}
+
+function formatPriceSource(source: string): string {
+  if (source === "coingecko") return "CoinGecko";
+  if (source === "yahoo") return "Yahoo";
+  if (source === "test") return "Test";
+  return "Manual";
+}
+
+function isStale(price: Price): boolean {
+  const ageMicros = BigInt(Date.now()) * 1000n -
+    price.updatedAt.microsSinceUnixEpoch;
+  return ageMicros > 2n * 60n * 60n * 1_000_000n;
 }
 
 function formatPrice(value: number): string {

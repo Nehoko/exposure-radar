@@ -6,3 +6,7 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all procedure arg schemas
+import * as RefreshRealPricesProcedure from "../refresh_real_prices_procedure";
+
+export type RefreshRealPricesArgs = __Infer<typeof RefreshRealPricesProcedure.params>;
+export type RefreshRealPricesResult = __Infer<typeof RefreshRealPricesProcedure.returnType>;

@@ -16,7 +16,9 @@ import RemovePositionReducer from "../remove_position_reducer";
 import SayHelloReducer from "../say_hello_reducer";
 import SetExposureLimitReducer from "../set_exposure_limit_reducer";
 import SetPriceReducer from "../set_price_reducer";
+import StartRealPricesReducer from "../start_real_prices_reducer";
 import StartTestPricesReducer from "../start_test_prices_reducer";
+import StopRealPricesReducer from "../stop_real_prices_reducer";
 import StopTestPricesReducer from "../stop_test_prices_reducer";
 
 export type AddParams = __Infer<typeof AddReducer>;
@@ -29,5 +31,7 @@ export type RemovePositionParams = __Infer<typeof RemovePositionReducer>;
 export type SayHelloParams = __Infer<typeof SayHelloReducer>;
 export type SetExposureLimitParams = __Infer<typeof SetExposureLimitReducer>;
 export type SetPriceParams = __Infer<typeof SetPriceReducer>;
+export type StartRealPricesParams = __Infer<typeof StartRealPricesReducer>;
 export type StartTestPricesParams = __Infer<typeof StartTestPricesReducer>;
+export type StopRealPricesParams = __Infer<typeof StopRealPricesReducer>;
 export type StopTestPricesParams = __Infer<typeof StopTestPricesReducer>;
