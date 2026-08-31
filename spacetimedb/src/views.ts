@@ -4,6 +4,7 @@ import spacetimedb, {
   exposure_limit,
   exposure_warning,
   portfolio,
+  portfolio_etf_holding,
   position,
   price,
   real_price_feed,
@@ -73,6 +74,21 @@ export const myRealPriceFeed = spacetimedb.view(
     if (!access) return [];
     const row = ctx.db.real_price_feed.portfolio_id.find(access.portfolio_id);
     return row ? [row] : [];
+  },
+);
+
+export const myEtfHoldings = spacetimedb.view(
+  { name: "my_etf_holdings", public: true },
+  t.array(portfolio_etf_holding.rowType),
+  (ctx) => {
+    const access = ctx.db.portfolio_access.identity.find(ctx.sender);
+    return access
+      ? [
+        ...ctx.db.portfolio_etf_holding.by_portfolio_etf.filter(
+          access.portfolio_id,
+        ),
+      ]
+      : [];
   },
 );
 

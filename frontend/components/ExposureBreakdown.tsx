@@ -4,7 +4,13 @@ interface ExposureBreakdownProps {
   exposures: PortfolioExposure[];
   portfolioValue: number;
   unanalysedEtfValue: number;
-  supportedEtfs: string[];
+  actualEtfs: string[];
+  sampleEtfs: string[];
+  latestHoldingsAt?: Date;
+  refreshing: boolean;
+  error?: string;
+  message?: string;
+  onRefresh: () => Promise<void>;
 }
 
 export default function ExposureBreakdown(
@@ -12,7 +18,13 @@ export default function ExposureBreakdown(
     exposures,
     portfolioValue,
     unanalysedEtfValue,
-    supportedEtfs,
+    actualEtfs,
+    sampleEtfs,
+    latestHoldingsAt,
+    refreshing,
+    error,
+    message,
+    onRefresh,
   }: ExposureBreakdownProps,
 ) {
   return (
@@ -22,12 +34,27 @@ export default function ExposureBreakdown(
           <p class="eyebrow">Inside your assets</p>
           <h3 id="exposure-title">Largest real exposures</h3>
           <p>
-            Direct assets are combined with the sample companies held inside
-            supported ETFs.
+            Direct assets are combined with companies held inside your ETFs.
+            Real fund holdings replace sample data when available.
           </p>
         </div>
-        <span class="sample-badge">Sample ETF data</span>
+        <div class="exposure-actions">
+          <span class={`sample-badge ${actualEtfs.length > 0 ? "live" : ""}`}>
+            {actualEtfs.length > 0 ? "Real ETF data" : "Sample ETF data"}
+          </span>
+          <button
+            class="refresh-holdings-button"
+            type="button"
+            disabled={refreshing}
+            onClick={() => void onRefresh()}
+          >
+            {refreshing ? "Refreshing…" : "Refresh holdings"}
+          </button>
+        </div>
       </div>
+
+      {error && <p class="etf-holdings-status error" role="alert">{error}</p>}
+      {message && <p class="etf-holdings-status">{message}</p>}
 
       {portfolioValue === 0
         ? (
@@ -40,7 +67,7 @@ export default function ExposureBreakdown(
         ? (
           <div class="exposure-empty">
             <strong>No supported exposures yet.</strong>
-            <p>Add a stock, crypto asset, or one of the sample ETFs.</p>
+            <p>Add a stock, crypto asset, or supported ETF.</p>
           </div>
         )
         : (
@@ -77,13 +104,21 @@ export default function ExposureBreakdown(
 
       <div class="exposure-footnote">
         <span>
-          Supported samples:{" "}
-          {supportedEtfs.length > 0 ? supportedEtfs.join(", ") : "loading…"}
+          {actualEtfs.length > 0
+            ? `Real holdings: ${actualEtfs.join(", ")}${
+              latestHoldingsAt
+                ? ` · fetched ${formatDate(latestHoldingsAt)}`
+                : ""
+            }`
+            : "No real ETF holdings imported yet."}
+          {sampleEtfs.length > 0
+            ? ` Sample fallback: ${sampleEtfs.join(", ")}.`
+            : ""}
         </span>
         {unanalysedEtfValue > 0 && (
           <span>
             {formatMoney(unanalysedEtfValue)}{" "}
-            of ETF value is outside the sample holdings.
+            of ETF value is outside known holdings.
           </span>
         )}
       </div>
@@ -116,4 +151,11 @@ function formatPercentage(value: number): string {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 1,
   }).format(value) + "%";
+}
+
+function formatDate(value: Date): string {
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(value);
 }

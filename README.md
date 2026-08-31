@@ -33,7 +33,9 @@ The first useful version will be deliberately small. It will let a user:
 - see the total portfolio value;
 - see simple profit or loss;
 - see direct and indirect exposure from supported ETFs;
-- inspect sample holdings for VOO, QQQ, and VWCE;
+- inspect current Eulerpool holdings for European and US ETFs, with Alpha
+  Vantage as a fallback for VOO and QQQ;
+- use clearly labelled sample holdings when real fund data is unavailable;
 - watch the screen update immediately when data changes.
 
 ## Not in the first version
@@ -77,8 +79,12 @@ stocks, ETFs, and crypto. If Yahoo cannot price a cryptocurrency, the app tries
 CoinGecko. Prices refresh hourly while the feed is running and can also be
 refreshed manually. These free endpoints may be delayed or rate-limited.
 
-The ETF holdings are a small educational sample, not current market data.
-Holdings not included in the sample are shown as unanalysed ETF value.
+ETF exposure uses Eulerpool fund holdings first, including European UCITS ETFs.
+Alpha Vantage is a fallback for VOO and QQQ. The app refreshes holdings daily
+and also lets the user refresh manually. To keep updates small, it imports the
+1,000 largest valid holdings from each fund. The remaining fund weight is shown
+as unanalysed ETF value. Educational sample holdings remain available when no
+provider recognizes a fund.
 
 ## Portfolio secret
 

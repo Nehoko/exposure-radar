@@ -1278,6 +1278,55 @@ h1 {
   font-weight: 700;
 }
 
+.sample-badge.live {
+  border-color: rgba(92, 205, 151, 0.24);
+  color: #8edbb5;
+  background: rgba(25, 109, 71, 0.18);
+}
+
+.exposure-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 9px;
+}
+
+.refresh-holdings-button {
+  padding: 7px 10px;
+  border: 1px solid rgba(130, 151, 210, 0.2);
+  border-radius: 8px;
+  color: #aebbd9;
+  background: rgba(57, 72, 113, 0.18);
+  font: inherit;
+  font-size: 0.64rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.refresh-holdings-button:hover:not(:disabled) {
+  border-color: rgba(130, 151, 210, 0.36);
+  color: #d8e0f1;
+}
+
+.refresh-holdings-button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.etf-holdings-status {
+  margin: 0;
+  padding: 10px 26px;
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+  color: #8190aa;
+  background: rgba(17, 27, 49, 0.2);
+  font-size: 0.68rem;
+}
+
+.etf-holdings-status.error {
+  color: #e3a8a8;
+  background: rgba(116, 35, 35, 0.12);
+}
+
 .exposure-list {
   margin: 0;
   padding: 0;

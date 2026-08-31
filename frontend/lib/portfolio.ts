@@ -14,7 +14,7 @@ interface AssetValue {
   assetType: string;
 }
 
-interface EtfHoldingValue {
+export interface EtfHoldingValue {
   etfSymbol: string;
   holdingSymbol: string;
   holdingName: string;

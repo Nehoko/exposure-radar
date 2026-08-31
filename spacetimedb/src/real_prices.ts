@@ -2,32 +2,23 @@ import { ScheduleAt, Timestamp } from "spacetimedb";
 import { SenderError, t } from "spacetimedb/server";
 import { requirePortfolioId } from "./access";
 import { evaluateExposureWarnings } from "./exposure";
-import spacetimedb, {
-  type Ctx,
-  type ProcCtx,
-  real_price_tick,
-} from "./schema";
+import { CoinGeckoQuoteProvider } from "./market_data/providers/coingecko";
+import { YahooQuoteProvider } from "./market_data/providers/yahoo";
+import { QuoteService } from "./market_data/quote_service";
+import type { MarketQuote } from "./market_data/types";
+import spacetimedb, { type Ctx, type ProcCtx, real_price_tick } from "./schema";
 
 const HOURLY = 3_600_000_000n;
-const USER_AGENT = "ExposureRadar/0.1";
+const quoteService = new QuoteService([
+  new YahooQuoteProvider(),
+  new CoinGeckoQuoteProvider(),
+]);
 
 const RefreshResult = t.object("RefreshResult", {
   updated: t.u32(),
   failed: t.u32(),
   message: t.string(),
 });
-
-interface AssetSnapshot {
-  id: bigint;
-  symbol: string;
-  assetType: string;
-}
-
-interface MarketQuote {
-  value: number;
-  source: "yahoo" | "coingecko";
-  marketTimeMicros?: bigint;
-}
 
 export const startRealPrices = spacetimedb.reducer((ctx) => {
   const portfolioId = requirePortfolioId(ctx);
@@ -96,7 +87,7 @@ function refreshPortfolio(
   const failures: string[] = [];
 
   for (const asset of assets) {
-    const result = fetchMarketQuote(ctx, asset);
+    const result = quoteService.fetch(ctx, asset);
     if (result.quote) quotes.set(asset.id, result.quote);
     else failures.push(`${asset.symbol}: ${result.error}`);
   }
@@ -137,74 +128,6 @@ function refreshPortfolio(
   return { updated: quotes.size, failed: failures.length, message };
 }
 
-function fetchMarketQuote(
-  ctx: ProcCtx,
-  asset: AssetSnapshot,
-): { quote?: MarketQuote; error?: string } {
-  const yahoo = fetchYahooQuote(ctx, asset);
-  if (yahoo.quote) return yahoo;
-  if (asset.assetType !== "crypto") return yahoo;
-
-  const coingecko = fetchCoinGeckoQuote(ctx, asset.symbol);
-  if (coingecko.quote) return coingecko;
-  return {
-    error: `Yahoo failed (${yahoo.error}); CoinGecko failed (${coingecko.error})`,
-  };
-}
-
-function fetchYahooQuote(
-  ctx: ProcCtx,
-  asset: AssetSnapshot,
-): { quote?: MarketQuote; error?: string } {
-  const yahooSymbol = asset.assetType === "crypto"
-    ? `${asset.symbol}-USD`
-    : asset.symbol;
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${
-    encodeURIComponent(yahooSymbol)
-  }?interval=1d&range=5d`;
-  try {
-    const response = ctx.http.fetch(url, {
-      headers: { "user-agent": USER_AGENT, accept: "application/json" },
-    });
-    if (!response.ok) return { error: `HTTP ${response.status}` };
-    const payload = response.json();
-    const meta = payload?.chart?.result?.[0]?.meta;
-    const value = meta?.regularMarketPrice;
-    const marketTimeMicros = secondsToMicros(meta?.regularMarketTime);
-    return validPrice(value)
-      ? { quote: { value, source: "yahoo", marketTimeMicros } }
-      : { error: "price missing" };
-  } catch (error) {
-    return { error: errorMessage(error) };
-  }
-}
-
-function fetchCoinGeckoQuote(
-  ctx: ProcCtx,
-  symbol: string,
-): { quote?: MarketQuote; error?: string } {
-  const normalized = symbol.trim().toLowerCase();
-  const url = `https://api.coingecko.com/api/v3/simple/price?symbols=${
-    encodeURIComponent(normalized)
-  }&vs_currencies=usd&include_last_updated_at=true`;
-  try {
-    const response = ctx.http.fetch(url, {
-      headers: { "user-agent": USER_AGENT, accept: "application/json" },
-    });
-    if (!response.ok) return { error: `HTTP ${response.status}` };
-    const payload = response.json();
-    const value = payload?.[normalized]?.usd;
-    const marketTimeMicros = secondsToMicros(
-      payload?.[normalized]?.last_updated_at,
-    );
-    return validPrice(value)
-      ? { quote: { value, source: "coingecko", marketTimeMicros } }
-      : { error: "price missing" };
-  } catch (error) {
-    return { error: errorMessage(error) };
-  }
-}
-
 function setRealFeedState(
   ctx: Ctx,
   portfolioId: bigint,
@@ -227,18 +150,4 @@ function buildStatusMessage(updated: number, failures: string[]): string {
   if (failures.length === 0) return `Updated ${updated} assets`;
   const details = failures.slice(0, 3).join("; ");
   return `Updated ${updated}; failed ${failures.length}. ${details}`;
-}
-
-function validPrice(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value) && value > 0;
-}
-
-function secondsToMicros(value: unknown): bigint | undefined {
-  return typeof value === "number" && Number.isSafeInteger(value) && value > 0
-    ? BigInt(value) * 1_000_000n
-    : undefined;
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "request failed";
 }

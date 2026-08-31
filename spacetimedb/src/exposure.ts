@@ -96,11 +96,17 @@ function calculateCompanyExposures(
     if (asset.asset_type === "stock") {
       addCompanyExposure(exposureBySymbol, asset.symbol, value);
     } else if (asset.asset_type === "etf") {
-      for (
-        const holding of ctx.db.etf_holding.etf_symbol.filter(
-          asset.symbol.toUpperCase(),
-        )
-      ) {
+      const etfSymbol = asset.symbol.toUpperCase();
+      const imported = [
+        ...ctx.db.portfolio_etf_holding.by_portfolio_etf.filter([
+          portfolioId,
+          etfSymbol,
+        ]),
+      ];
+      const holdings = imported.length > 0
+        ? imported
+        : [...ctx.db.etf_holding.etf_symbol.filter(etfSymbol)];
+      for (const holding of holdings) {
         addCompanyExposure(
           exposureBySymbol,
           holding.holding_symbol,

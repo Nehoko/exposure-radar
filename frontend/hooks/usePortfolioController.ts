@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { ConnectionState } from "../components/ConnectionStatus.tsx";
 import type { PortfolioDashboardProps } from "../components/PortfolioDashboard.tsx";
 import {
@@ -11,6 +11,7 @@ import type {
   EtfHolding,
   ExposureLimit,
   ExposureWarning,
+  PortfolioEtfHolding,
   Position,
   Price,
   RealPriceFeed,
@@ -27,6 +28,9 @@ export function usePortfolioController() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [prices, setPrices] = useState<Price[]>([]);
   const [etfHoldings, setEtfHoldings] = useState<EtfHolding[]>([]);
+  const [portfolioEtfHoldings, setPortfolioEtfHoldings] = useState<
+    PortfolioEtfHolding[]
+  >([]);
   const [exposureLimits, setExposureLimits] = useState<ExposureLimit[]>([]);
   const [exposureWarnings, setExposureWarnings] = useState<ExposureWarning[]>(
     [],
@@ -50,11 +54,15 @@ export function usePortfolioController() {
   const [testPriceError, setTestPriceError] = useState<string>();
   const [realPriceError, setRealPriceError] = useState<string>();
   const [exposureError, setExposureError] = useState<string>();
+  const [etfHoldingsError, setEtfHoldingsError] = useState<string>();
+  const [etfHoldingsMessage, setEtfHoldingsMessage] = useState<string>();
+  const [refreshingEtfHoldings, setRefreshingEtfHoldings] = useState(false);
   const [warningError, setWarningError] = useState<string>();
   const [savingWarningLimit, setSavingWarningLimit] = useState(false);
   const [authenticating, setAuthenticating] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [removingId, setRemovingId] = useState<bigint>();
+  const attemptedEtfRefresh = useRef(false);
 
   useEffect(() => {
     let disposed = false;
@@ -68,6 +76,9 @@ export function usePortfolioController() {
           setPositions([...activeConnection.db.myPositions.iter()]);
           setPrices([...activeConnection.db.myPrices.iter()]);
           setEtfHoldings([...activeConnection.db.etfHolding.iter()]);
+          setPortfolioEtfHoldings([
+            ...activeConnection.db.myEtfHoldings.iter(),
+          ]);
           setExposureLimits([...activeConnection.db.myExposureLimit.iter()]);
           setExposureWarnings([
             ...activeConnection.db.myExposureWarnings.iter(),
@@ -118,6 +129,7 @@ export function usePortfolioController() {
             tables.myTestPriceFeed,
             tables.myRealPriceFeed,
             tables.etfHolding,
+            tables.myEtfHoldings,
             tables.myExposureLimit,
             tables.myExposureWarnings,
           ]);
@@ -149,6 +161,42 @@ export function usePortfolioController() {
     () => new Map(prices.map((price) => [price.assetId, price])),
     [prices],
   );
+  const effectiveEtfHoldings = useMemo(() => {
+    const importedEtfs = new Set(
+      portfolioEtfHoldings.map((holding) => holding.etfSymbol),
+    );
+    return [
+      ...etfHoldings.filter((holding) => !importedEtfs.has(holding.etfSymbol)),
+      ...portfolioEtfHoldings,
+    ];
+  }, [etfHoldings, portfolioEtfHoldings]);
+
+  useEffect(() => {
+    if (
+      !connection || !subscriptionReady || !hasPortfolio ||
+      attemptedEtfRefresh.current
+    ) return;
+    const etfs = assets.filter((asset) => asset.assetType === "etf");
+    if (etfs.length === 0) return;
+    attemptedEtfRefresh.current = true;
+    const oneDayAgoMicros = BigInt(Date.now() - 24 * 60 * 60 * 1_000) * 1_000n;
+    const freshEtfs = new Set(
+      portfolioEtfHoldings
+        .filter((holding) =>
+          holding.fetchedAt.microsSinceUnixEpoch >= oneDayAgoMicros
+        )
+        .map((holding) => holding.etfSymbol),
+    );
+    if (etfs.some((asset) => !freshEtfs.has(asset.symbol))) {
+      void refreshEtfHoldings();
+    }
+  }, [
+    connection,
+    subscriptionReady,
+    hasPortfolio,
+    assets,
+    portfolioEtfHoldings,
+  ]);
 
   async function authenticatePortfolio(token: string) {
     if (!connection || !subscriptionReady) return;
@@ -316,6 +364,62 @@ export function usePortfolioController() {
     }
   }
 
+  async function refreshEtfHoldings() {
+    if (!connection || !hasPortfolio) return;
+    const symbols = [
+      ...new Set(
+        assets.filter((asset) => asset.assetType === "etf")
+          .map((asset) => asset.symbol.toUpperCase()),
+      ),
+    ];
+    if (symbols.length === 0) return;
+
+    setRefreshingEtfHoldings(true);
+    setEtfHoldingsError(undefined);
+    setEtfHoldingsMessage(undefined);
+    const imported: string[] = [];
+    const unavailable: string[] = [];
+    try {
+      for (const symbol of symbols) {
+        const response = await fetch(
+          `/api/etf-holdings?symbol=${encodeURIComponent(symbol)}`,
+        );
+        if (!response.ok) {
+          unavailable.push(symbol);
+          continue;
+        }
+        const profile = await response.json() as {
+          provider: string;
+          holdings: Array<{ symbol: string; name: string; weight: number }>;
+        };
+        await connection.reducers.replaceEtfHoldings({
+          etfSymbol: symbol,
+          source: profile.provider,
+          holdings: profile.holdings,
+        });
+        imported.push(symbol);
+      }
+      const messages = [];
+      if (imported.length > 0) {
+        messages.push(`Updated real holdings: ${imported.join(", ")}.`);
+      }
+      if (unavailable.length > 0) {
+        messages.push(
+          `Sample data remains for unsupported ETFs: ${
+            unavailable.join(", ")
+          }.`,
+        );
+      }
+      setEtfHoldingsMessage(messages.join(" "));
+    } catch (error) {
+      setEtfHoldingsError(
+        getErrorMessage(error, "Could not refresh ETF holdings."),
+      );
+    } finally {
+      setRefreshingEtfHoldings(false);
+    }
+  }
+
   async function saveExposureLimit(maximumPercentage: number) {
     if (!connection || !hasPortfolio) return;
     if (
@@ -342,7 +446,8 @@ export function usePortfolioController() {
     positions,
     pricesByAssetId,
     realPriceFeed: realPriceFeeds[0],
-    etfHoldings,
+    etfHoldings: effectiveEtfHoldings,
+    actualEtfHoldings: portfolioEtfHoldings,
     exposureLimit: exposureLimits[0],
     exposureWarnings,
     symbol,
@@ -354,6 +459,8 @@ export function usePortfolioController() {
     testPriceError,
     realPriceError,
     exposureError,
+    etfHoldingsError,
+    etfHoldingsMessage,
     warningError,
     submitting,
     savingPrice,
@@ -361,6 +468,7 @@ export function usePortfolioController() {
     changingTestPrices,
     changingRealPrices,
     refreshingRealPrices,
+    refreshingEtfHoldings,
     savingWarningLimit,
     removingId,
     onSymbolChange: setSymbol,
@@ -373,6 +481,7 @@ export function usePortfolioController() {
     onToggleTestPrices: toggleTestPrices,
     onToggleRealPrices: toggleRealPrices,
     onRefreshRealPrices: refreshRealPrices,
+    onRefreshEtfHoldings: refreshEtfHoldings,
     onSaveExposureLimit: saveExposureLimit,
   };
 
@@ -406,6 +515,7 @@ function registerTableListeners(
     connection.db.myTestPriceFeed,
     connection.db.myRealPriceFeed,
     connection.db.etfHolding,
+    connection.db.myEtfHoldings,
     connection.db.myExposureLimit,
     connection.db.myExposureWarnings,
   ];

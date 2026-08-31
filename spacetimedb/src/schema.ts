@@ -68,6 +68,24 @@ export const etf_holding = table({ name: "etf_holding", public: true }, {
   weight: t.f64(),
 });
 
+export const portfolio_etf_holding = table({
+  name: "portfolio_etf_holding",
+  indexes: [{
+    accessor: "by_portfolio_etf",
+    algorithm: "btree",
+    columns: ["portfolio_id", "etf_symbol"],
+  }],
+}, {
+  key: t.string().primaryKey(),
+  portfolio_id: t.u64(),
+  etf_symbol: t.string(),
+  holding_symbol: t.string(),
+  holding_name: t.string(),
+  weight: t.f64(),
+  source: t.string(),
+  fetched_at: t.timestamp(),
+});
+
 export const portfolio = table({ name: "portfolio" }, {
   id: t.u64().primaryKey().autoInc(),
 });
@@ -117,6 +135,7 @@ const spacetimedb = schema({
   real_price_feed,
   real_price_tick,
   etf_holding,
+  portfolio_etf_holding,
   portfolio,
   portfolio_credential,
   portfolio_access,

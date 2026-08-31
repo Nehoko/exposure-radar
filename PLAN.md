@@ -72,6 +72,10 @@ Goal: Show hidden company exposure inside a few supported ETFs.
 - [x] Calculate indirect company exposure.
 - [x] Combine direct and indirect exposure.
 - [x] Show the largest real exposures.
+- [x] Import current VOO and QQQ holdings from Alpha Vantage.
+- [x] Import European and US ETF holdings from Eulerpool.
+- [x] Fall back from Eulerpool to Alpha Vantage when possible.
+- [x] Keep sample holdings as a clear fallback when real data is unavailable.
 
 Done when: the app can show that the same company is owned directly and through
 an ETF.

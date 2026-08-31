@@ -1,7 +1,7 @@
 export { default } from "./schema";
 
 export { add, onConnect, onDisconnect, sayHello } from "./demo";
-export { init, loadSampleEtfHoldings } from "./etf";
+export { init, loadSampleEtfHoldings, replaceEtfHoldings } from "./etf";
 export { setExposureLimit } from "./exposure";
 export {
   addPosition,
@@ -24,6 +24,7 @@ export {
 } from "./real_prices";
 export {
   myAssets,
+  myEtfHoldings,
   myExposureLimit,
   myExposureWarnings,
   myPortfolio,

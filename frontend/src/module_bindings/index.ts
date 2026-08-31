@@ -41,6 +41,7 @@ import CreatePortfolioReducer from "./create_portfolio_reducer";
 import LoadSampleEtfHoldingsReducer from "./load_sample_etf_holdings_reducer";
 import LogoutPortfolioReducer from "./logout_portfolio_reducer";
 import RemovePositionReducer from "./remove_position_reducer";
+import ReplaceEtfHoldingsReducer from "./replace_etf_holdings_reducer";
 import SayHelloReducer from "./say_hello_reducer";
 import SetExposureLimitReducer from "./set_exposure_limit_reducer";
 import SetPriceReducer from "./set_price_reducer";
@@ -55,6 +56,7 @@ import * as RefreshRealPricesProcedure from "./refresh_real_prices_procedure";
 // Import all table schema definitions
 import EtfHoldingRow from "./etf_holding_table";
 import MyAssetsRow from "./my_assets_table";
+import MyEtfHoldingsRow from "./my_etf_holdings_table";
 import MyExposureLimitRow from "./my_exposure_limit_table";
 import MyExposureWarningsRow from "./my_exposure_warnings_table";
 import MyPortfolioRow from "./my_portfolio_table";
@@ -99,6 +101,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyAssetsRow),
+  myEtfHoldings: __table({
+    name: 'my_etf_holdings',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyEtfHoldingsRow),
   myExposureLimit: __table({
     name: 'my_exposure_limit',
     indexes: [
@@ -159,6 +168,7 @@ const reducersSchema = __reducers(
   __reducerSchema("load_sample_etf_holdings", LoadSampleEtfHoldingsReducer),
   __reducerSchema("logout_portfolio", LogoutPortfolioReducer),
   __reducerSchema("remove_position", RemovePositionReducer),
+  __reducerSchema("replace_etf_holdings", ReplaceEtfHoldingsReducer),
   __reducerSchema("say_hello", SayHelloReducer),
   __reducerSchema("set_exposure_limit", SetExposureLimitReducer),
   __reducerSchema("set_price", SetPriceReducer),

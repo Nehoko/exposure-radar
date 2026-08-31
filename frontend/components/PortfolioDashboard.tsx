@@ -2,11 +2,12 @@ import {
   calculatePortfolioExposures,
   calculatePortfolioTotals,
 } from "../lib/portfolio.ts";
+import type { EtfHoldingValue } from "../lib/portfolio.ts";
 import type {
   Asset,
-  EtfHolding,
   ExposureLimit,
   ExposureWarning,
+  PortfolioEtfHolding,
   Position,
   Price,
   RealPriceFeed,
@@ -26,7 +27,8 @@ export interface PortfolioDashboardProps {
   positions: Position[];
   pricesByAssetId: Map<bigint, Price>;
   realPriceFeed?: RealPriceFeed;
-  etfHoldings: EtfHolding[];
+  etfHoldings: EtfHoldingValue[];
+  actualEtfHoldings: PortfolioEtfHolding[];
   exposureLimit?: ExposureLimit;
   exposureWarnings: ExposureWarning[];
   symbol: string;
@@ -38,6 +40,8 @@ export interface PortfolioDashboardProps {
   testPriceError?: string;
   realPriceError?: string;
   exposureError?: string;
+  etfHoldingsError?: string;
+  etfHoldingsMessage?: string;
   warningError?: string;
   submitting: boolean;
   savingPrice: boolean;
@@ -45,6 +49,7 @@ export interface PortfolioDashboardProps {
   changingTestPrices: boolean;
   changingRealPrices: boolean;
   refreshingRealPrices: boolean;
+  refreshingEtfHoldings: boolean;
   savingWarningLimit: boolean;
   removingId?: bigint;
   onSymbolChange: (value: string) => void;
@@ -57,6 +62,7 @@ export interface PortfolioDashboardProps {
   onToggleTestPrices: () => Promise<void>;
   onToggleRealPrices: () => Promise<void>;
   onRefreshRealPrices: () => Promise<void>;
+  onRefreshEtfHoldings: () => Promise<void>;
   onSaveExposureLimit: (maximumPercentage: number) => Promise<void>;
 }
 
@@ -71,9 +77,37 @@ export default function PortfolioDashboard(props: PortfolioDashboardProps) {
     props.pricesByAssetId,
     props.etfHoldings,
   );
+  const portfolioEtfs = new Set(
+    props.assets.filter((asset) => asset.assetType === "etf")
+      .map((asset) => asset.symbol),
+  );
   const supportedEtfs = [
-    ...new Set(props.etfHoldings.map((holding) => holding.etfSymbol)),
+    ...new Set(
+      props.etfHoldings
+        .map((holding) => holding.etfSymbol)
+        .filter((symbol) => portfolioEtfs.has(symbol)),
+    ),
   ].sort();
+  const actualEtfs = [
+    ...new Set(
+      props.actualEtfHoldings
+        .map((holding) => holding.etfSymbol)
+        .filter((symbol) => portfolioEtfs.has(symbol)),
+    ),
+  ].sort();
+  const actualEtfSet = new Set(actualEtfs);
+  const sampleEtfs = supportedEtfs.filter((symbol) =>
+    !actualEtfSet.has(symbol)
+  );
+  const latestHoldingsAt = props.actualEtfHoldings.reduce<Date | undefined>(
+    (latest, holding) => {
+      const fetchedAt = new Date(
+        Number(holding.fetchedAt.microsSinceUnixEpoch / 1_000n),
+      );
+      return !latest || fetchedAt > latest ? fetchedAt : latest;
+    },
+    undefined,
+  );
 
   return (
     <>
@@ -195,7 +229,13 @@ export default function PortfolioDashboard(props: PortfolioDashboardProps) {
           exposures={exposureResult.exposures}
           portfolioValue={exposureResult.portfolioValue}
           unanalysedEtfValue={exposureResult.unanalysedEtfValue}
-          supportedEtfs={supportedEtfs}
+          actualEtfs={actualEtfs}
+          sampleEtfs={sampleEtfs}
+          latestHoldingsAt={latestHoldingsAt}
+          refreshing={props.refreshingEtfHoldings}
+          error={props.etfHoldingsError}
+          message={props.etfHoldingsMessage}
+          onRefresh={props.onRefreshEtfHoldings}
         />
       </section>
     </>

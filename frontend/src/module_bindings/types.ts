@@ -54,8 +54,18 @@ export const ExposureWarning = __t.object("ExposureWarning", {
 });
 export type ExposureWarning = __Infer<typeof ExposureWarning>;
 
+export const ImportedEtfHolding = __t.object("ImportedEtfHolding", {
+  symbol: __t.string(),
+  name: __t.string(),
+  weight: __t.f64(),
+});
+export type ImportedEtfHolding = __Infer<typeof ImportedEtfHolding>;
+
 export const MyAssets = __t.object("MyAssets", {});
 export type MyAssets = __Infer<typeof MyAssets>;
+
+export const MyEtfHoldings = __t.object("MyEtfHoldings", {});
+export type MyEtfHoldings = __Infer<typeof MyEtfHoldings>;
 
 export const MyExposureLimit = __t.object("MyExposureLimit", {});
 export type MyExposureLimit = __Infer<typeof MyExposureLimit>;
@@ -101,6 +111,18 @@ export const PortfolioCredential = __t.object("PortfolioCredential", {
   tokenHash: __t.string(),
 });
 export type PortfolioCredential = __Infer<typeof PortfolioCredential>;
+
+export const PortfolioEtfHolding = __t.object("PortfolioEtfHolding", {
+  key: __t.string(),
+  portfolioId: __t.u64(),
+  etfSymbol: __t.string(),
+  holdingSymbol: __t.string(),
+  holdingName: __t.string(),
+  weight: __t.f64(),
+  source: __t.string(),
+  fetchedAt: __t.timestamp(),
+});
+export type PortfolioEtfHolding = __Infer<typeof PortfolioEtfHolding>;
 
 export const Position = __t.object("Position", {
   id: __t.u64(),
