@@ -4,7 +4,11 @@ import PortfolioAccess from "../components/PortfolioAccess.tsx";
 import PortfolioDashboard from "../components/PortfolioDashboard.tsx";
 import { usePortfolioController } from "../hooks/usePortfolioController.ts";
 
-export default function PortfolioApp() {
+interface PortfolioAppProps {
+  debug: boolean;
+}
+
+export default function PortfolioApp({ debug }: PortfolioAppProps) {
   const portfolio = usePortfolioController();
   return (
     <div class="page-shell">
@@ -52,7 +56,10 @@ export default function PortfolioApp() {
                   onSaved={portfolio.dismissGeneratedToken}
                 />
               )}
-              <PortfolioDashboard {...portfolio.dashboardProps} />
+              <PortfolioDashboard
+                {...portfolio.dashboardProps}
+                showTestPrices={debug}
+              />
             </>
           )}
       </main>

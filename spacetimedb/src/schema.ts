@@ -102,6 +102,16 @@ export const portfolio_access = table({ name: "portfolio_access" }, {
   portfolio_id: t.u64().index("btree"),
 });
 
+export const market_data_credential = table(
+  { name: "market_data_credential" },
+  {
+    provider: t.string().primaryKey(),
+    api_key: t.string(),
+    enabled: t.bool(),
+    updated_at: t.timestamp(),
+  },
+);
+
 export const exposure_limit = table({ name: "exposure_limit" }, {
   portfolio_id: t.u64().primaryKey(),
   maximum_percentage: t.f64(),
@@ -139,6 +149,7 @@ const spacetimedb = schema({
   portfolio,
   portfolio_credential,
   portfolio_access,
+  market_data_credential,
   exposure_limit,
   exposure_breach,
   exposure_warning,

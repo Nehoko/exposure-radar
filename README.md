@@ -28,8 +28,8 @@ The first useful version will be deliberately small. It will let a user:
 - add stocks, ETFs, and crypto manually;
 - enter or update prices manually;
 - run simulated prices that change every five seconds;
-- fetch hourly market prices from Yahoo Finance, with CoinGecko as a crypto
-  fallback;
+- fetch hourly market prices from Yahoo Finance, then try configured providers
+  when Yahoo data is missing or old;
 - see the total portfolio value;
 - see simple profit or loss;
 - see direct and indirect exposure from supported ETFs;
@@ -37,6 +37,9 @@ The first useful version will be deliberately small. It will let a user:
   Vantage as a fallback for VOO and QQQ;
 - use clearly labelled sample holdings when real fund data is unavailable;
 - watch the screen update immediately when data changes.
+
+Set `EXPOSURE_RADAR_DEBUG=true` in `.env.local` to show the simulated-price
+controls and market-data key settings. They are hidden by default.
 
 ## Not in the first version
 
@@ -74,17 +77,27 @@ Milestone 6 is complete. A user can create a private portfolio, add positions,
 run shared simulated prices, see combined company exposure, and receive an
 immediate warning when one company exceeds a chosen limit.
 
-Milestone 7 is complete. Market-price support uses Yahoo Finance first for
-stocks, ETFs, and crypto. If Yahoo cannot price a cryptocurrency, the app tries
-CoinGecko. Prices refresh hourly while the feed is running and can also be
-refreshed manually. These free endpoints may be delayed or rate-limited.
+Milestone 7 is complete. Market-price support uses Yahoo Finance first. When
+Yahoo data is missing or old, the backend tries Eulerpool and Alpha Vantage for
+stocks and ETFs, or CoinGecko for crypto. If all backups fail, the app keeps the
+old Yahoo price. Prices refresh hourly and can also be refreshed manually.
 
 ETF exposure uses Eulerpool fund holdings first, including European UCITS ETFs.
-Alpha Vantage is a fallback for VOO and QQQ. The app refreshes holdings daily
-and also lets the user refresh manually. To keep updates small, it imports the
-1,000 largest valid holdings from each fund. The remaining fund weight is shown
-as unanalysed ETF value. Educational sample holdings remain available when no
-provider recognizes a fund.
+Alpha Vantage is a fallback for VOO and QQQ. SpacetimeDB fetches and stores the
+holdings; Fresh only displays them. To keep updates small, the app imports the
+1,000 largest valid holdings from each fund. Educational sample holdings remain
+available when no provider recognizes a fund.
+
+## Market data keys
+
+Eulerpool and Alpha Vantage keys are optional. Yahoo and CoinGecko work without
+keys. To configure a key, sign in and use the **Market data keys** panel. The
+key is sent directly to SpacetimeDB and stored in a private table. The web app
+can see whether a provider is configured, but cannot read the key back.
+
+For now, the application connects to Maincloud. `compose.yml` is a small base
+for a later self-hosted SpacetimeDB deployment. A production deployment should
+pin the image version and put TLS/reverse-proxy protection in front of it.
 
 ## Portfolio secret
 

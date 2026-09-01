@@ -11,6 +11,7 @@ const assetTypeLabels: Record<string, string> = {
 };
 
 interface PositionsPanelProps {
+  stepNumber: string;
   assetsById: Map<bigint, Asset>;
   positions: Position[];
   pricesByAssetId: Map<bigint, Price>;
@@ -22,7 +23,7 @@ export default function PositionsPanel(props: PositionsPanelProps) {
   return (
     <div class="positions-panel panel">
       <div class="panel-heading positions-heading">
-        <span class="step-number">05</span>
+        <span class="step-number">{props.stepNumber}</span>
         <div>
           <h3>Saved positions</h3>
           <p>

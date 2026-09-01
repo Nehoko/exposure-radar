@@ -1,8 +1,17 @@
 export { default } from "./schema";
 
 export { add, onConnect, onDisconnect, sayHello } from "./demo";
-export { init, loadSampleEtfHoldings, replaceEtfHoldings } from "./etf";
+export {
+  init,
+  loadSampleEtfHoldings,
+  refreshEtfHoldings,
+  replaceEtfHoldings,
+} from "./etf";
 export { setExposureLimit } from "./exposure";
+export {
+  removeMarketDataCredential,
+  setMarketDataCredential,
+} from "./market_data/credentials";
 export {
   addPosition,
   authenticatePortfolio,
@@ -27,6 +36,7 @@ export {
   myEtfHoldings,
   myExposureLimit,
   myExposureWarnings,
+  myMarketDataProviderStatus,
   myPortfolio,
   myPositions,
   myPrices,

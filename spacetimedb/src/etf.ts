@@ -1,6 +1,10 @@
 import { SenderError, t } from "spacetimedb/server";
 import { requirePortfolioId } from "./access";
 import { evaluateExposureWarnings } from "./exposure";
+import { EtfHoldingsService } from "./market_data/etf_holdings_service";
+import { AlphaVantageEtfHoldingsProvider } from "./market_data/providers/alpha_vantage_holdings";
+import { EulerpoolEtfHoldingsProvider } from "./market_data/providers/eulerpool_holdings";
+import type { MarketEtfHolding } from "./market_data/types";
 import spacetimedb, { type Ctx } from "./schema";
 
 const sampleEtfHoldings = [
@@ -30,6 +34,12 @@ const ImportedEtfHolding = t.object("ImportedEtfHolding", {
 const holdingSymbolPattern = /^[A-Z0-9][A-Z0-9._-]{0,31}$/;
 const providerNamePattern = /^[a-z0-9][a-z0-9-]{0,31}$/;
 
+const EtfRefreshResult = t.object("EtfRefreshResult", {
+  updated: t.u32(),
+  failed: t.u32(),
+  message: t.string(),
+});
+
 export const init = spacetimedb.init((ctx) => seedSampleEtfHoldings(ctx));
 
 export const loadSampleEtfHoldings = spacetimedb.reducer((ctx) => {
@@ -46,71 +56,155 @@ export const replaceEtfHoldings = spacetimedb.reducer(
   },
   (ctx, { etfSymbol, source, holdings }) => {
     const portfolioId = requirePortfolioId(ctx);
-    const normalizedEtf = etfSymbol.trim().toUpperCase();
-    const normalizedSource = source.trim().toLowerCase();
-    if (!providerNamePattern.test(normalizedSource)) {
-      throw new SenderError("ETF holdings source is invalid");
-    }
-    const ownedEtf = [...ctx.db.asset.portfolio_id.filter(portfolioId)].some(
-      (asset) => asset.asset_type === "etf" && asset.symbol === normalizedEtf,
+    replacePortfolioEtfHoldings(
+      ctx,
+      portfolioId,
+      etfSymbol,
+      source,
+      holdings,
     );
-    if (!ownedEtf) throw new SenderError("ETF not found in this portfolio");
-    if (holdings.length === 0 || holdings.length > 5_000) {
-      throw new SenderError("ETF holdings count must be between 1 and 5000");
-    }
-
-    const normalized = new Map<
-      string,
-      { symbol: string; name: string; weight: number }
-    >();
-    let totalWeight = 0;
-    for (const holding of holdings) {
-      const symbol = holding.symbol.trim().toUpperCase();
-      const name = holding.name.trim().slice(0, 160);
-      if (!holdingSymbolPattern.test(symbol) || !name) {
-        continue;
-      }
-      if (
-        !Number.isFinite(holding.weight) || holding.weight <= 0 ||
-        holding.weight > 100
-      ) {
-        throw new SenderError("ETF holding weight must be between 0 and 100");
-      }
-      const existing = normalized.get(symbol);
-      if (existing) existing.weight += holding.weight;
-      else normalized.set(symbol, { symbol, name, weight: holding.weight });
-      totalWeight += holding.weight;
-    }
-    if (normalized.size === 0) {
-      throw new SenderError("ETF holdings contain no usable company rows");
-    }
-    if (totalWeight > 101) {
-      throw new SenderError("ETF holding weights exceed 101%");
-    }
-
-    for (
-      const existing of ctx.db.portfolio_etf_holding.by_portfolio_etf.filter([
-        portfolioId,
-        normalizedEtf,
-      ])
-    ) {
-      ctx.db.portfolio_etf_holding.key.delete(existing.key);
-    }
-    for (const holding of normalized.values()) {
-      ctx.db.portfolio_etf_holding.insert({
-        key: `${portfolioId}:${normalizedEtf}:${holding.symbol}`,
-        portfolio_id: portfolioId,
-        etf_symbol: normalizedEtf,
-        holding_symbol: holding.symbol,
-        holding_name: holding.name,
-        weight: holding.weight,
-        source: normalizedSource,
-        fetched_at: ctx.timestamp,
-      });
-    }
     evaluateExposureWarnings(ctx, portfolioId);
   },
 );
+
+export const refreshEtfHoldings = spacetimedb.procedure(
+  {},
+  EtfRefreshResult,
+  (ctx) => {
+    const setup = ctx.withTx((tx) => {
+      const portfolioId = requirePortfolioId(tx);
+      return {
+        portfolioId,
+        credentials: new Map(
+          [...tx.db.market_data_credential.iter()]
+            .filter((credential) => credential.enabled)
+            .map((credential) => [credential.provider, credential.api_key]),
+        ),
+        etfs: [...tx.db.asset.portfolio_id.filter(portfolioId)]
+          .filter((asset) => asset.asset_type === "etf")
+          .map((asset) => asset.symbol),
+      };
+    });
+    const holdingsService = new EtfHoldingsService([
+      new EulerpoolEtfHoldingsProvider(
+        setup.credentials.get("eulerpool"),
+      ),
+      new AlphaVantageEtfHoldingsProvider(
+        setup.credentials.get("alpha-vantage"),
+      ),
+    ]);
+    if (setup.credentials.size === 0) {
+      return {
+        updated: 0,
+        failed: setup.etfs.length,
+        message:
+          "No ETF provider is configured. Save an Eulerpool or Alpha Vantage key in Market data keys.",
+      };
+    }
+    const snapshots = new Map<
+      string,
+      { provider: string; holdings: MarketEtfHolding[] }
+    >();
+    const failures: string[] = [];
+    for (const symbol of setup.etfs) {
+      const result = holdingsService.fetch(ctx, { symbol });
+      if (result.snapshot) snapshots.set(symbol, result.snapshot);
+      else failures.push(`${symbol}: ${result.error}`);
+    }
+
+    if (snapshots.size > 0) {
+      ctx.withTx((tx) => {
+        for (const [symbol, snapshot] of snapshots) {
+          replacePortfolioEtfHoldings(
+            tx,
+            setup.portfolioId,
+            symbol,
+            snapshot.provider,
+            snapshot.holdings,
+          );
+        }
+        evaluateExposureWarnings(tx, setup.portfolioId);
+      });
+    }
+
+    const message = buildRefreshMessage(snapshots.size, failures);
+    return { updated: snapshots.size, failed: failures.length, message };
+  },
+);
+
+function replacePortfolioEtfHoldings(
+  ctx: Ctx,
+  portfolioId: bigint,
+  etfSymbol: string,
+  source: string,
+  holdings: readonly MarketEtfHolding[],
+): void {
+  const normalizedEtf = etfSymbol.trim().toUpperCase();
+  const normalizedSource = source.trim().toLowerCase();
+  if (!providerNamePattern.test(normalizedSource)) {
+    throw new SenderError("ETF holdings source is invalid");
+  }
+  const ownedEtf = [...ctx.db.asset.portfolio_id.filter(portfolioId)].some(
+    (asset) => asset.asset_type === "etf" && asset.symbol === normalizedEtf,
+  );
+  if (!ownedEtf) throw new SenderError("ETF not found in this portfolio");
+  if (holdings.length === 0 || holdings.length > 5_000) {
+    throw new SenderError("ETF holdings count must be between 1 and 5000");
+  }
+
+  const normalized = new Map<
+    string,
+    { symbol: string; name: string; weight: number }
+  >();
+  let totalWeight = 0;
+  for (const holding of holdings) {
+    const symbol = holding.symbol.trim().toUpperCase();
+    const name = holding.name.trim().slice(0, 160);
+    if (!holdingSymbolPattern.test(symbol) || !name) continue;
+    if (
+      !Number.isFinite(holding.weight) || holding.weight <= 0 ||
+      holding.weight > 100
+    ) {
+      throw new SenderError("ETF holding weight must be between 0 and 100");
+    }
+    const existing = normalized.get(symbol);
+    if (existing) existing.weight += holding.weight;
+    else normalized.set(symbol, { symbol, name, weight: holding.weight });
+    totalWeight += holding.weight;
+  }
+  if (normalized.size === 0) {
+    throw new SenderError("ETF holdings contain no usable company rows");
+  }
+  if (totalWeight > 101) {
+    throw new SenderError("ETF holding weights exceed 101%");
+  }
+
+  for (
+    const existing of ctx.db.portfolio_etf_holding.by_portfolio_etf.filter([
+      portfolioId,
+      normalizedEtf,
+    ])
+  ) ctx.db.portfolio_etf_holding.key.delete(existing.key);
+  for (const holding of normalized.values()) {
+    ctx.db.portfolio_etf_holding.insert({
+      key: `${portfolioId}:${normalizedEtf}:${holding.symbol}`,
+      portfolio_id: portfolioId,
+      etf_symbol: normalizedEtf,
+      holding_symbol: holding.symbol,
+      holding_name: holding.name,
+      weight: holding.weight,
+      source: normalizedSource,
+      fetched_at: ctx.timestamp,
+    });
+  }
+}
+
+function buildRefreshMessage(updated: number, failures: string[]): string {
+  if (failures.length === 0) return `Updated ${updated} ETFs`;
+  return `Updated ${updated}; failed ${failures.length}. ${
+    failures.slice(0, 3).join("; ")
+  }`;
+}
 
 function seedSampleEtfHoldings(ctx: Ctx): void {
   for (

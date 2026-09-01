@@ -28,6 +28,13 @@ export const EtfHolding = __t.object("EtfHolding", {
 });
 export type EtfHolding = __Infer<typeof EtfHolding>;
 
+export const EtfRefreshResult = __t.object("EtfRefreshResult", {
+  updated: __t.u32(),
+  failed: __t.u32(),
+  message: __t.string(),
+});
+export type EtfRefreshResult = __Infer<typeof EtfRefreshResult>;
+
 export const ExposureBreach = __t.object("ExposureBreach", {
   key: __t.string(),
   portfolioId: __t.u64(),
@@ -61,6 +68,21 @@ export const ImportedEtfHolding = __t.object("ImportedEtfHolding", {
 });
 export type ImportedEtfHolding = __Infer<typeof ImportedEtfHolding>;
 
+export const MarketDataCredential = __t.object("MarketDataCredential", {
+  provider: __t.string(),
+  apiKey: __t.string(),
+  enabled: __t.bool(),
+  updatedAt: __t.timestamp(),
+});
+export type MarketDataCredential = __Infer<typeof MarketDataCredential>;
+
+export const MarketDataProviderStatus = __t.object("MarketDataProviderStatus", {
+  provider: __t.string(),
+  enabled: __t.bool(),
+  updatedAt: __t.timestamp(),
+});
+export type MarketDataProviderStatus = __Infer<typeof MarketDataProviderStatus>;
+
 export const MyAssets = __t.object("MyAssets", {});
 export type MyAssets = __Infer<typeof MyAssets>;
 
@@ -72,6 +94,9 @@ export type MyExposureLimit = __Infer<typeof MyExposureLimit>;
 
 export const MyExposureWarnings = __t.object("MyExposureWarnings", {});
 export type MyExposureWarnings = __Infer<typeof MyExposureWarnings>;
+
+export const MyMarketDataProviderStatus = __t.object("MyMarketDataProviderStatus", {});
+export type MyMarketDataProviderStatus = __Infer<typeof MyMarketDataProviderStatus>;
 
 export const MyPortfolio = __t.object("MyPortfolio", {});
 export type MyPortfolio = __Infer<typeof MyPortfolio>;

@@ -657,11 +657,96 @@ h1 {
 .position-form,
 .price-form,
 .test-price-panel,
-.real-price-panel {
+.real-price-panel,
+.market-data-settings {
   display: grid;
   align-content: start;
   gap: 17px;
   padding: 25px;
+}
+
+.provider-settings {
+  display: grid;
+  gap: 12px;
+}
+
+.provider-key-form {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 13px;
+  background: rgba(6, 10, 19, 0.32);
+}
+
+.provider-key-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.provider-key-heading > div {
+  display: grid;
+  gap: 4px;
+}
+
+.provider-key-heading strong {
+  color: #eef2fb;
+  font-size: 0.84rem;
+}
+
+.provider-key-heading small,
+.provider-key-form label {
+  color: #738096;
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.provider-key-form input {
+  width: 100%;
+  min-height: 43px;
+  padding: 0 12px;
+  border: 1px solid rgba(148, 167, 232, 0.18);
+  border-radius: 10px;
+  outline: none;
+  color: #eef2fb;
+  background: rgba(8, 13, 24, 0.8);
+  font: inherit;
+}
+
+.provider-key-form input:focus {
+  border-color: rgba(126, 149, 255, 0.65);
+}
+
+.provider-state {
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: #8792a7;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.62rem;
+  font-weight: 750;
+}
+
+.provider-state.is-ready {
+  color: #82dcb8;
+  background: rgba(30, 91, 70, 0.2);
+}
+
+.provider-remove-button {
+  min-height: 43px;
+  padding: 0 12px;
+  border: 0;
+  color: #a9b4c9;
+  background: transparent;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.provider-remove-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .feed-actions {

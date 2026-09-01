@@ -7,6 +7,7 @@ import type {
   Asset,
   ExposureLimit,
   ExposureWarning,
+  MarketDataProviderStatus,
   PortfolioEtfHolding,
   Position,
   Price,
@@ -17,16 +18,19 @@ import ExposureBreakdown from "./ExposureBreakdown.tsx";
 import ExposureWarningPanel from "./ExposureWarningPanel.tsx";
 import PortfolioSummary from "./PortfolioSummary.tsx";
 import PositionsPanel from "./PositionsPanel.tsx";
+import MarketDataSettings from "./MarketDataSettings.tsx";
 import PriceEditor from "./PriceEditor.tsx";
 import RealPriceControls from "./RealPriceControls.tsx";
 import TestPriceControls from "./TestPriceControls.tsx";
 
 export interface PortfolioDashboardProps {
+  showTestPrices?: boolean;
   assets: Asset[];
   assetsById: Map<bigint, Asset>;
   positions: Position[];
   pricesByAssetId: Map<bigint, Price>;
   realPriceFeed?: RealPriceFeed;
+  marketDataProviders: MarketDataProviderStatus[];
   etfHoldings: EtfHoldingValue[];
   actualEtfHoldings: PortfolioEtfHolding[];
   exposureLimit?: ExposureLimit;
@@ -50,6 +54,8 @@ export interface PortfolioDashboardProps {
   changingRealPrices: boolean;
   refreshingRealPrices: boolean;
   refreshingEtfHoldings: boolean;
+  savingMarketDataProvider?: string;
+  marketDataError?: string;
   savingWarningLimit: boolean;
   removingId?: bigint;
   onSymbolChange: (value: string) => void;
@@ -63,6 +69,11 @@ export interface PortfolioDashboardProps {
   onToggleRealPrices: () => Promise<void>;
   onRefreshRealPrices: () => Promise<void>;
   onRefreshEtfHoldings: () => Promise<void>;
+  onSaveMarketDataCredential: (
+    provider: string,
+    apiKey: string,
+  ) => Promise<void>;
+  onRemoveMarketDataCredential: (provider: string) => Promise<void>;
   onSaveExposureLimit: (maximumPercentage: number) => Promise<void>;
 }
 
@@ -194,16 +205,26 @@ export default function PortfolioDashboard(props: PortfolioDashboardProps) {
               onToggle={props.onToggleRealPrices}
               onRefresh={props.onRefreshRealPrices}
             />
-            <TestPriceControls
-              running={props.testPricesRunning}
-              submitting={props.changingTestPrices}
-              disabled={props.assets.length === 0}
-              error={props.testPriceError}
-              onToggle={props.onToggleTestPrices}
+            {props.showTestPrices && (
+              <TestPriceControls
+                running={props.testPricesRunning}
+                submitting={props.changingTestPrices}
+                disabled={props.assets.length === 0}
+                error={props.testPriceError}
+                onToggle={props.onToggleTestPrices}
+              />
+            )}
+            <MarketDataSettings
+              providers={props.marketDataProviders}
+              savingProvider={props.savingMarketDataProvider}
+              error={props.marketDataError}
+              onSave={props.onSaveMarketDataCredential}
+              onRemove={props.onRemoveMarketDataCredential}
             />
           </div>
 
           <PositionsPanel
+            stepNumber={props.showTestPrices ? "05" : "04"}
             assetsById={props.assetsById}
             positions={props.positions}
             pricesByAssetId={props.pricesByAssetId}

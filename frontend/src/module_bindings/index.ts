@@ -40,10 +40,12 @@ import AuthenticatePortfolioReducer from "./authenticate_portfolio_reducer";
 import CreatePortfolioReducer from "./create_portfolio_reducer";
 import LoadSampleEtfHoldingsReducer from "./load_sample_etf_holdings_reducer";
 import LogoutPortfolioReducer from "./logout_portfolio_reducer";
+import RemoveMarketDataCredentialReducer from "./remove_market_data_credential_reducer";
 import RemovePositionReducer from "./remove_position_reducer";
 import ReplaceEtfHoldingsReducer from "./replace_etf_holdings_reducer";
 import SayHelloReducer from "./say_hello_reducer";
 import SetExposureLimitReducer from "./set_exposure_limit_reducer";
+import SetMarketDataCredentialReducer from "./set_market_data_credential_reducer";
 import SetPriceReducer from "./set_price_reducer";
 import StartRealPricesReducer from "./start_real_prices_reducer";
 import StartTestPricesReducer from "./start_test_prices_reducer";
@@ -51,6 +53,7 @@ import StopRealPricesReducer from "./stop_real_prices_reducer";
 import StopTestPricesReducer from "./stop_test_prices_reducer";
 
 // Import all procedure arg schemas
+import * as RefreshEtfHoldingsProcedure from "./refresh_etf_holdings_procedure";
 import * as RefreshRealPricesProcedure from "./refresh_real_prices_procedure";
 
 // Import all table schema definitions
@@ -59,6 +62,7 @@ import MyAssetsRow from "./my_assets_table";
 import MyEtfHoldingsRow from "./my_etf_holdings_table";
 import MyExposureLimitRow from "./my_exposure_limit_table";
 import MyExposureWarningsRow from "./my_exposure_warnings_table";
+import MyMarketDataProviderStatusRow from "./my_market_data_provider_status_table";
 import MyPortfolioRow from "./my_portfolio_table";
 import MyPositionsRow from "./my_positions_table";
 import MyPricesRow from "./my_prices_table";
@@ -122,6 +126,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyExposureWarningsRow),
+  myMarketDataProviderStatus: __table({
+    name: 'my_market_data_provider_status',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyMarketDataProviderStatusRow),
   myPortfolio: __table({
     name: 'my_portfolio',
     indexes: [
@@ -167,10 +178,12 @@ const reducersSchema = __reducers(
   __reducerSchema("create_portfolio", CreatePortfolioReducer),
   __reducerSchema("load_sample_etf_holdings", LoadSampleEtfHoldingsReducer),
   __reducerSchema("logout_portfolio", LogoutPortfolioReducer),
+  __reducerSchema("remove_market_data_credential", RemoveMarketDataCredentialReducer),
   __reducerSchema("remove_position", RemovePositionReducer),
   __reducerSchema("replace_etf_holdings", ReplaceEtfHoldingsReducer),
   __reducerSchema("say_hello", SayHelloReducer),
   __reducerSchema("set_exposure_limit", SetExposureLimitReducer),
+  __reducerSchema("set_market_data_credential", SetMarketDataCredentialReducer),
   __reducerSchema("set_price", SetPriceReducer),
   __reducerSchema("start_real_prices", StartRealPricesReducer),
   __reducerSchema("start_test_prices", StartTestPricesReducer),
@@ -180,6 +193,7 @@ const reducersSchema = __reducers(
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */
 const proceduresSchema = __procedures(
+  __procedureSchema("refresh_etf_holdings", RefreshEtfHoldingsProcedure.params, RefreshEtfHoldingsProcedure.returnType),
   __procedureSchema("refresh_real_prices", RefreshRealPricesProcedure.params, RefreshRealPricesProcedure.returnType),
 );
 

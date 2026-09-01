@@ -100,6 +100,10 @@ Goal: Replace test prices with a small amount of real or delayed market data.
 - [x] Import delayed prices for a few assets.
 - [x] Handle missing or old prices clearly.
 - [x] Keep manual prices as a fallback.
+- [x] Store optional provider keys in a private SpacetimeDB table.
+- [x] Make external requests from SpacetimeDB procedures, not Fresh.
+- [x] Try another provider when Yahoo data is missing or old.
+- [x] Add a simple Compose base for future self-hosting.
 
 Done when: the app can update a few prices without manual input.
 

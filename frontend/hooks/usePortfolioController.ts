@@ -11,6 +11,7 @@ import type {
   EtfHolding,
   ExposureLimit,
   ExposureWarning,
+  MarketDataProviderStatus,
   PortfolioEtfHolding,
   Position,
   Price,
@@ -37,6 +38,9 @@ export function usePortfolioController() {
   );
   const [testPriceFeeds, setTestPriceFeeds] = useState<TestPriceFeed[]>([]);
   const [realPriceFeeds, setRealPriceFeeds] = useState<RealPriceFeed[]>([]);
+  const [marketDataProviders, setMarketDataProviders] = useState<
+    MarketDataProviderStatus[]
+  >([]);
   const [symbol, setSymbol] = useState("");
   const [assetType, setAssetType] = useState("stock");
   const [amount, setAmount] = useState("");
@@ -57,6 +61,10 @@ export function usePortfolioController() {
   const [etfHoldingsError, setEtfHoldingsError] = useState<string>();
   const [etfHoldingsMessage, setEtfHoldingsMessage] = useState<string>();
   const [refreshingEtfHoldings, setRefreshingEtfHoldings] = useState(false);
+  const [savingMarketDataProvider, setSavingMarketDataProvider] = useState<
+    string
+  >();
+  const [marketDataError, setMarketDataError] = useState<string>();
   const [warningError, setWarningError] = useState<string>();
   const [savingWarningLimit, setSavingWarningLimit] = useState(false);
   const [authenticating, setAuthenticating] = useState(false);
@@ -88,6 +96,9 @@ export function usePortfolioController() {
           ]);
           setRealPriceFeeds([
             ...activeConnection.db.myRealPriceFeed.iter(),
+          ]);
+          setMarketDataProviders([
+            ...activeConnection.db.myMarketDataProviderStatus.iter(),
           ]);
         };
 
@@ -128,6 +139,7 @@ export function usePortfolioController() {
             tables.myPrices,
             tables.myTestPriceFeed,
             tables.myRealPriceFeed,
+            tables.myMarketDataProviderStatus,
             tables.etfHolding,
             tables.myEtfHoldings,
             tables.myExposureLimit,
@@ -366,57 +378,48 @@ export function usePortfolioController() {
 
   async function refreshEtfHoldings() {
     if (!connection || !hasPortfolio) return;
-    const symbols = [
-      ...new Set(
-        assets.filter((asset) => asset.assetType === "etf")
-          .map((asset) => asset.symbol.toUpperCase()),
-      ),
-    ];
-    if (symbols.length === 0) return;
-
     setRefreshingEtfHoldings(true);
     setEtfHoldingsError(undefined);
     setEtfHoldingsMessage(undefined);
-    const imported: string[] = [];
-    const unavailable: string[] = [];
     try {
-      for (const symbol of symbols) {
-        const response = await fetch(
-          `/api/etf-holdings?symbol=${encodeURIComponent(symbol)}`,
-        );
-        if (!response.ok) {
-          unavailable.push(symbol);
-          continue;
-        }
-        const profile = await response.json() as {
-          provider: string;
-          holdings: Array<{ symbol: string; name: string; weight: number }>;
-        };
-        await connection.reducers.replaceEtfHoldings({
-          etfSymbol: symbol,
-          source: profile.provider,
-          holdings: profile.holdings,
-        });
-        imported.push(symbol);
-      }
-      const messages = [];
-      if (imported.length > 0) {
-        messages.push(`Updated real holdings: ${imported.join(", ")}.`);
-      }
-      if (unavailable.length > 0) {
-        messages.push(
-          `Sample data remains for unsupported ETFs: ${
-            unavailable.join(", ")
-          }.`,
-        );
-      }
-      setEtfHoldingsMessage(messages.join(" "));
+      const result = await connection.procedures.refreshEtfHoldings({});
+      setEtfHoldingsMessage(result.message);
     } catch (error) {
       setEtfHoldingsError(
         getErrorMessage(error, "Could not refresh ETF holdings."),
       );
     } finally {
       setRefreshingEtfHoldings(false);
+    }
+  }
+
+  async function saveMarketDataCredential(provider: string, apiKey: string) {
+    if (!connection || !hasPortfolio) return;
+    setSavingMarketDataProvider(provider);
+    setMarketDataError(undefined);
+    try {
+      await connection.reducers.setMarketDataCredential({ provider, apiKey });
+    } catch (error) {
+      setMarketDataError(
+        getErrorMessage(error, `Could not save the ${provider} key.`),
+      );
+    } finally {
+      setSavingMarketDataProvider(undefined);
+    }
+  }
+
+  async function removeMarketDataCredential(provider: string) {
+    if (!connection || !hasPortfolio) return;
+    setSavingMarketDataProvider(provider);
+    setMarketDataError(undefined);
+    try {
+      await connection.reducers.removeMarketDataCredential({ provider });
+    } catch (error) {
+      setMarketDataError(
+        getErrorMessage(error, `Could not remove the ${provider} key.`),
+      );
+    } finally {
+      setSavingMarketDataProvider(undefined);
     }
   }
 
@@ -446,6 +449,7 @@ export function usePortfolioController() {
     positions,
     pricesByAssetId,
     realPriceFeed: realPriceFeeds[0],
+    marketDataProviders,
     etfHoldings: effectiveEtfHoldings,
     actualEtfHoldings: portfolioEtfHoldings,
     exposureLimit: exposureLimits[0],
@@ -469,6 +473,8 @@ export function usePortfolioController() {
     changingRealPrices,
     refreshingRealPrices,
     refreshingEtfHoldings,
+    savingMarketDataProvider,
+    marketDataError,
     savingWarningLimit,
     removingId,
     onSymbolChange: setSymbol,
@@ -482,6 +488,8 @@ export function usePortfolioController() {
     onToggleRealPrices: toggleRealPrices,
     onRefreshRealPrices: refreshRealPrices,
     onRefreshEtfHoldings: refreshEtfHoldings,
+    onSaveMarketDataCredential: saveMarketDataCredential,
+    onRemoveMarketDataCredential: removeMarketDataCredential,
     onSaveExposureLimit: saveExposureLimit,
   };
 
@@ -514,6 +522,7 @@ function registerTableListeners(
     connection.db.myPrices,
     connection.db.myTestPriceFeed,
     connection.db.myRealPriceFeed,
+    connection.db.myMarketDataProviderStatus,
     connection.db.etfHolding,
     connection.db.myEtfHoldings,
     connection.db.myExposureLimit,

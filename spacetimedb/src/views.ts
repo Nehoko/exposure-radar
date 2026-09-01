@@ -11,6 +11,12 @@ import spacetimedb, {
   test_price_feed,
 } from "./schema";
 
+const MarketDataProviderStatus = t.row("MarketDataProviderStatus", {
+  provider: t.string().primaryKey(),
+  enabled: t.bool(),
+  updatedAt: t.timestamp(),
+});
+
 export const myPortfolio = spacetimedb.view(
   { name: "my_portfolio", public: true },
   t.array(portfolio.rowType),
@@ -111,5 +117,18 @@ export const myExposureWarnings = spacetimedb.view(
     return access
       ? [...ctx.db.exposure_warning.portfolio_id.filter(access.portfolio_id)]
       : [];
+  },
+);
+
+export const myMarketDataProviderStatus = spacetimedb.view(
+  { name: "my_market_data_provider_status", public: true },
+  t.array(MarketDataProviderStatus),
+  (ctx) => {
+    if (!ctx.db.portfolio_access.identity.find(ctx.sender)) return [];
+    return [...ctx.db.market_data_credential.iter()].map((credential) => ({
+      provider: credential.provider,
+      enabled: credential.enabled,
+      updatedAt: credential.updated_at,
+    }));
   },
 );

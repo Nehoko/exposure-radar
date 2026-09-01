@@ -22,3 +22,29 @@ export interface QuoteProvider {
   supports(asset: AssetReference): boolean;
   fetchQuote(ctx: ProcCtx, asset: AssetReference): QuoteResult;
 }
+
+export interface EtfReference {
+  symbol: string;
+}
+
+export interface MarketEtfHolding {
+  symbol: string;
+  name: string;
+  weight: number;
+}
+
+export interface EtfHoldingsSnapshot {
+  provider: string;
+  holdings: MarketEtfHolding[];
+}
+
+export interface EtfHoldingsResult {
+  snapshot?: EtfHoldingsSnapshot;
+  error?: string;
+}
+
+export interface EtfHoldingsProvider {
+  readonly name: string;
+  supports(reference: EtfReference): boolean;
+  fetchHoldings(ctx: ProcCtx, reference: EtfReference): EtfHoldingsResult;
+}

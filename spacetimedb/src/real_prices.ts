@@ -3,17 +3,14 @@ import { SenderError, t } from "spacetimedb/server";
 import { requirePortfolioId } from "./access";
 import { evaluateExposureWarnings } from "./exposure";
 import { CoinGeckoQuoteProvider } from "./market_data/providers/coingecko";
+import { AlphaVantageQuoteProvider } from "./market_data/providers/alpha_vantage";
+import { EulerpoolQuoteProvider } from "./market_data/providers/eulerpool";
 import { YahooQuoteProvider } from "./market_data/providers/yahoo";
 import { QuoteService } from "./market_data/quote_service";
 import type { MarketQuote } from "./market_data/types";
 import spacetimedb, { type Ctx, type ProcCtx, real_price_tick } from "./schema";
 
 const HOURLY = 3_600_000_000n;
-const quoteService = new QuoteService([
-  new YahooQuoteProvider(),
-  new CoinGeckoQuoteProvider(),
-]);
-
 const RefreshResult = t.object("RefreshResult", {
   updated: t.u32(),
   failed: t.u32(),
@@ -76,18 +73,32 @@ function refreshPortfolio(
   ctx: ProcCtx,
   portfolioId: bigint,
 ): { updated: number; failed: number; message: string } {
-  const assets = ctx.withTx((tx) =>
-    [...tx.db.asset.portfolio_id.filter(portfolioId)].map((asset) => ({
+  const setup = ctx.withTx((tx) => ({
+    nowMicros: tx.timestamp.microsSinceUnixEpoch,
+    credentials: new Map(
+      [...tx.db.market_data_credential.iter()]
+        .filter((credential) => credential.enabled)
+        .map((credential) => [credential.provider, credential.api_key]),
+    ),
+    assets: [...tx.db.asset.portfolio_id.filter(portfolioId)].map((asset) => ({
       id: asset.id,
       symbol: asset.symbol,
       assetType: asset.asset_type,
-    }))
-  );
+    })),
+  }));
+  const quoteService = new QuoteService([
+    new YahooQuoteProvider(),
+    new EulerpoolQuoteProvider(setup.credentials.get("eulerpool")),
+    new AlphaVantageQuoteProvider(
+      setup.credentials.get("alpha-vantage"),
+    ),
+    new CoinGeckoQuoteProvider(),
+  ]);
   const quotes = new Map<bigint, MarketQuote>();
   const failures: string[] = [];
 
-  for (const asset of assets) {
-    const result = quoteService.fetch(ctx, asset);
+  for (const asset of setup.assets) {
+    const result = quoteService.fetch(ctx, asset, setup.nowMicros);
     if (result.quote) quotes.set(asset.id, result.quote);
     else failures.push(`${asset.symbol}: ${result.error}`);
   }
