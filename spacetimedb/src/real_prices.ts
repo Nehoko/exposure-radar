@@ -88,7 +88,10 @@ function refreshPortfolio(
   }));
   const quoteService = new QuoteService([
     new YahooQuoteProvider(),
-    new EulerpoolQuoteProvider(setup.credentials.get("eulerpool")),
+    new EulerpoolQuoteProvider(
+      setup.credentials.get("eulerpool"),
+      setup.nowMicros,
+    ),
     new AlphaVantageQuoteProvider(
       setup.credentials.get("alpha-vantage"),
     ),
@@ -96,14 +99,21 @@ function refreshPortfolio(
   ]);
   const quotes = new Map<bigint, MarketQuote>();
   const failures: string[] = [];
+  const staleWarnings: string[] = [];
 
   for (const asset of setup.assets) {
     const result = quoteService.fetch(ctx, asset, setup.nowMicros);
-    if (result.quote) quotes.set(asset.id, result.quote);
-    else failures.push(`${asset.symbol}: ${result.error}`);
+    if (result.quote) {
+      quotes.set(asset.id, result.quote);
+      if (result.warning) {
+        staleWarnings.push(`${asset.symbol}: ${result.warning}`);
+      }
+    } else failures.push(`${asset.symbol}: ${result.error}`);
   }
 
-  const message = buildStatusMessage(quotes.size, failures);
+  const updated = quotes.size - staleWarnings.length;
+  const message = buildStatusMessage(updated, staleWarnings, failures);
+  logRefreshDetails(updated, staleWarnings, failures);
   ctx.withTx((tx) => {
     const existingFeed = tx.db.real_price_feed.portfolio_id.find(portfolioId);
     const nextFeed = {
@@ -136,7 +146,7 @@ function refreshPortfolio(
     evaluateExposureWarnings(tx, portfolioId);
   });
 
-  return { updated: quotes.size, failed: failures.length, message };
+  return { updated, failed: failures.length, message };
 }
 
 function setRealFeedState(
@@ -157,8 +167,45 @@ function setRealFeedState(
   else ctx.db.real_price_feed.insert(next);
 }
 
-function buildStatusMessage(updated: number, failures: string[]): string {
-  if (failures.length === 0) return `Updated ${updated} assets`;
-  const details = failures.slice(0, 3).join("; ");
-  return `Updated ${updated}; failed ${failures.length}. ${details}`;
+function buildStatusMessage(
+  updated: number,
+  staleWarnings: string[],
+  failures: string[],
+): string {
+  const summary = [`Updated ${updated} ${plural(updated, "price", "prices")}.`];
+  if (staleWarnings.length > 0) {
+    summary.push(
+      `Kept ${staleWarnings.length} previous ${
+        plural(staleWarnings.length, "price", "prices")
+      }.`,
+    );
+  }
+  if (failures.length > 0) {
+    summary.push(
+      `Could not price ${failures.length} ${
+        plural(failures.length, "asset", "assets")
+      }.`,
+    );
+  }
+  return summary.join(" ");
+}
+
+function logRefreshDetails(
+  updated: number,
+  staleWarnings: string[],
+  failures: string[],
+): void {
+  console.info(
+    `refresh_real_prices: updated=${updated} kept_previous=${staleWarnings.length} failed=${failures.length}`,
+  );
+  for (const warning of staleWarnings) {
+    console.warn(`refresh_real_prices: ${warning}`);
+  }
+  for (const failure of failures) {
+    console.error(`refresh_real_prices: ${failure}`);
+  }
+}
+
+function plural(count: number, singular: string, pluralForm: string): string {
+  return count === 1 ? singular : pluralForm;
 }

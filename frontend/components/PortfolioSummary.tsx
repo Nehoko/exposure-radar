@@ -24,11 +24,11 @@ export default function PortfolioSummary(
         <strong>{formatMoney(currentValue)}</strong>
         <small>
           {totalPositions === 0
-            ? "No positions yet"
+            ? "No holdings yet"
             : missingPrices === 0
-            ? "All positions priced"
+            ? "All holdings priced"
             : `${missingPrices} ${
-              missingPrices === 1 ? "position needs" : "positions need"
+              missingPrices === 1 ? "holding needs" : "holdings need"
             } a price`}
         </small>
       </article>
@@ -54,7 +54,7 @@ export default function PortfolioSummary(
           {pricedPositions === 0
             ? "Add a current price"
             : missingPrices > 0
-            ? "For priced positions only"
+            ? "For priced holdings only"
             : "Current value − invested"}
         </small>
       </article>

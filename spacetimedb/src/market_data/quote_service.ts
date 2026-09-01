@@ -15,7 +15,13 @@ export class QuoteService {
       if (!provider.supports(asset)) continue;
       const result = provider.fetchQuote(ctx, asset);
       if (result.quote) {
-        if (!isStale(result.quote.marketTimeMicros, nowMicros)) return result;
+        const stale = isStale(result.quote.marketTimeMicros, nowMicros);
+        console.info(
+          `market_quote: symbol=${asset.symbol} provider=${provider.name} result=${
+            stale ? "stale" : "fresh"
+          }`,
+        );
+        if (!stale) return result;
         if (
           !newestStale?.quote ||
           (result.quote.marketTimeMicros ?? 0n) >
@@ -23,9 +29,20 @@ export class QuoteService {
         ) newestStale = result;
         continue;
       }
+      console.warn(
+        `market_quote: symbol=${asset.symbol} provider=${provider.name} result=failed error=${result.error}`,
+      );
       failures.push(`${provider.name} failed (${result.error})`);
     }
-    if (newestStale) return newestStale;
+    if (newestStale?.quote) {
+      const failedBackups = failures.length > 0
+        ? `; ${failures.join("; ")}`
+        : "";
+      return {
+        quote: newestStale.quote,
+        warning: `kept ${newestStale.quote.source} old${failedBackups}`,
+      };
+    }
     return { error: failures.join("; ") || "no provider supports this asset" };
   }
 }

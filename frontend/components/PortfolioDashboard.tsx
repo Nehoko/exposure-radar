@@ -82,6 +82,9 @@ export default function PortfolioDashboard(props: PortfolioDashboardProps) {
     props.positions,
     props.pricesByAssetId,
   );
+  const holdingCount = new Set(
+    props.positions.map((position) => position.assetId),
+  ).size;
   const exposureResult = calculatePortfolioExposures(
     props.assets,
     props.positions,
@@ -170,7 +173,7 @@ export default function PortfolioDashboard(props: PortfolioDashboardProps) {
           investedValue={totals.investedValue}
           profitLoss={totals.profitLoss}
           pricedPositions={totals.pricedPositions}
-          totalPositions={props.positions.length}
+          totalPositions={holdingCount}
         />
 
         <div class="portfolio-layout">

@@ -21,7 +21,7 @@ export default function RealPriceControls(
         <span class="step-number">03</span>
         <div>
           <h3>Market prices</h3>
-          <p>Yahoo first, CoinGecko backup for crypto.</p>
+          <p>Yahoo first, then configured backup providers.</p>
         </div>
         <span class={`feed-status ${running ? "is-running" : "is-stopped"}`}>
           <span aria-hidden="true" />

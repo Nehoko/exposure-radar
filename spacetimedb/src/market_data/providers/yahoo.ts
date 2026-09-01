@@ -7,6 +7,8 @@ import {
 } from "../http";
 import type { AssetReference, QuoteProvider, QuoteResult } from "../types";
 
+const SYMBOL_ALIASES = new Map([["VWCE", "VWCE.DE"]]);
+
 export class YahooQuoteProvider implements QuoteProvider {
   readonly name = "yahoo";
 
@@ -17,7 +19,7 @@ export class YahooQuoteProvider implements QuoteProvider {
   fetchQuote(ctx: ProcCtx, asset: AssetReference): QuoteResult {
     const yahooSymbol = asset.assetType === "crypto"
       ? `${asset.symbol}-USD`
-      : asset.symbol;
+      : SYMBOL_ALIASES.get(asset.symbol.toUpperCase()) ?? asset.symbol;
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${
       encodeURIComponent(yahooSymbol)
     }?interval=1d&range=5d`;

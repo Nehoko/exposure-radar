@@ -4,6 +4,7 @@ import {
   calculatePortfolioTotals,
   calculatePositionMetrics,
   getPriceMovement,
+  groupPositionsByAsset,
 } from "./portfolio.ts";
 
 Deno.test("calculates value and profit for a priced position", () => {
@@ -36,6 +37,32 @@ Deno.test("describes the latest price movement", () => {
   strictEqual(getPriceMovement(0.01), "up");
   strictEqual(getPriceMovement(-0.01), "down");
   strictEqual(getPriceMovement(0), "flat");
+});
+
+Deno.test("groups purchases using weighted average price", () => {
+  const holdings = groupPositionsByAsset([
+    { id: 1n, assetId: 10n, amount: 2, purchasePrice: 100 },
+    { id: 2n, assetId: 10n, amount: 3, purchasePrice: 130 },
+    { id: 3n, assetId: 20n, amount: 1, purchasePrice: 50 },
+  ]);
+
+  strictEqual(holdings.length, 2);
+  strictEqual(holdings[0].amount, 5);
+  strictEqual(holdings[0].investedValue, 590);
+  strictEqual(holdings[0].averagePurchasePrice, 118);
+  strictEqual(holdings[0].purchases.length, 2);
+});
+
+Deno.test("counts priced assets rather than individual purchases", () => {
+  const totals = calculatePortfolioTotals(
+    [
+      { assetId: 1n, amount: 2, purchasePrice: 100 },
+      { assetId: 1n, amount: 3, purchasePrice: 130 },
+    ],
+    new Map([[1n, { value: 140 }]]),
+  );
+
+  strictEqual(totals.pricedPositions, 1);
 });
 
 Deno.test("combines direct and ETF exposure to the same company", () => {

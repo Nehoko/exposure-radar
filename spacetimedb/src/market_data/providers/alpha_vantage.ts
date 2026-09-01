@@ -25,8 +25,17 @@ export class AlphaVantageQuoteProvider implements QuoteProvider {
       });
       if (!response.ok) return { error: `HTTP ${response.status}` };
       const payload = response.json();
-      if (payload?.Information || payload?.Note) {
-        return { error: "rate limited" };
+      const providerMessage = payload?.Information ?? payload?.Note;
+      if (typeof providerMessage === "string") {
+        const prefix = /rate limit|call frequency|requests per day/i.test(
+            providerMessage,
+          )
+          ? "rate limited"
+          : "provider message";
+        return { error: `${prefix}: ${providerMessage.slice(0, 240)}` };
+      }
+      if (typeof payload?.["Error Message"] === "string") {
+        return { error: "symbol not found" };
       }
       const quote = payload?.["Global Quote"];
       const value = Number(quote?.["05. price"]);

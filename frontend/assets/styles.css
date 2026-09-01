@@ -1158,6 +1158,84 @@ h1 {
   font-size: 0.68rem;
 }
 
+.average-price-label {
+  display: block;
+  margin-top: 3px;
+  color: #69768b;
+  font-size: 0.64rem;
+  font-weight: 650;
+}
+
+.purchases-toggle {
+  padding: 7px 10px;
+  border: 1px solid rgba(139, 162, 255, 0.18);
+  border-radius: 8px;
+  color: #aab8ed;
+  background: rgba(68, 88, 164, 0.12);
+  font: inherit;
+  font-size: 0.68rem;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.purchases-toggle:hover {
+  border-color: rgba(139, 162, 255, 0.36);
+  background: rgba(68, 88, 164, 0.24);
+}
+
+.purchase-history-row > td {
+  padding: 0 25px 20px !important;
+  background: rgba(4, 8, 16, 0.28);
+  white-space: normal;
+}
+
+.purchase-history {
+  padding: 16px;
+  border: 1px solid rgba(139, 162, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(13, 20, 34, 0.68);
+}
+
+.purchase-history > strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #cbd4e5;
+  font-size: 0.74rem;
+}
+
+.purchase-history table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.positions-table .purchase-history th,
+.positions-table .purchase-history td {
+  padding: 9px 10px;
+  text-align: right;
+}
+
+.positions-table .purchase-history th:first-child,
+.positions-table .purchase-history td:first-child {
+  padding-left: 0;
+  text-align: left;
+}
+
+.positions-table .purchase-history th:last-child,
+.positions-table .purchase-history td:last-child {
+  padding-right: 0;
+}
+
+.positions-table .purchase-history th {
+  border: 0;
+  background: transparent;
+  font-size: 0.6rem;
+}
+
+.positions-table .purchase-history td {
+  border-top: 1px solid rgba(255, 255, 255, 0.045);
+  font-size: 0.72rem;
+}
+
 .remove-button {
   padding: 7px 9px;
   border: 1px solid rgba(240, 116, 116, 0.16);

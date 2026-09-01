@@ -15,6 +15,7 @@ export interface MarketQuote {
 export interface QuoteResult {
   quote?: MarketQuote;
   error?: string;
+  warning?: string;
 }
 
 export interface QuoteProvider {

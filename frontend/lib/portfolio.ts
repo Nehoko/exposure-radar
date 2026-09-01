@@ -1,7 +1,15 @@
-interface PositionValue {
+export interface PositionValue {
   assetId: bigint;
   amount: number;
   purchasePrice: number;
+}
+
+export interface HoldingSummary<T extends PositionValue = PositionValue> {
+  assetId: bigint;
+  amount: number;
+  averagePurchasePrice: number;
+  investedValue: number;
+  purchases: T[];
 }
 
 interface PriceValue {
@@ -184,6 +192,34 @@ export function calculatePositionMetrics(
   };
 }
 
+export function groupPositionsByAsset<T extends PositionValue>(
+  positions: readonly T[],
+): HoldingSummary<T>[] {
+  const holdings = new Map<bigint, HoldingSummary<T>>();
+
+  for (const position of positions) {
+    const investedValue = position.amount * position.purchasePrice;
+    const existing = holdings.get(position.assetId);
+    if (existing) {
+      existing.amount += position.amount;
+      existing.investedValue += investedValue;
+      existing.averagePurchasePrice = existing.investedValue / existing.amount;
+      existing.purchases.push(position);
+      continue;
+    }
+
+    holdings.set(position.assetId, {
+      assetId: position.assetId,
+      amount: position.amount,
+      averagePurchasePrice: position.purchasePrice,
+      investedValue,
+      purchases: [position],
+    });
+  }
+
+  return [...holdings.values()];
+}
+
 export function calculatePortfolioTotals(
   positions: PositionValue[],
   pricesByAssetId: Map<bigint, PriceValue>,
@@ -191,7 +227,7 @@ export function calculatePortfolioTotals(
   let currentValue = 0;
   let investedValue = 0;
   let pricedInvestedValue = 0;
-  let pricedPositions = 0;
+  const pricedAssets = new Set<bigint>();
 
   for (const position of positions) {
     const metrics = calculatePositionMetrics(position, pricesByAssetId);
@@ -200,15 +236,15 @@ export function calculatePortfolioTotals(
 
     currentValue += metrics.currentValue;
     pricedInvestedValue += metrics.investedValue;
-    pricedPositions++;
+    pricedAssets.add(position.assetId);
   }
 
   return {
     currentValue,
     investedValue,
-    profitLoss: pricedPositions > 0
+    profitLoss: pricedAssets.size > 0
       ? currentValue - pricedInvestedValue
       : undefined,
-    pricedPositions,
+    pricedPositions: pricedAssets.size,
   };
 }
