@@ -1,4 +1,4 @@
-FROM denoland/deno:2.9.6 AS build
+FROM --platform=$BUILDPLATFORM denoland/deno:2.9.6 AS build
 
 WORKDIR /workspace
 
