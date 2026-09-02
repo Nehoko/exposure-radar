@@ -95,9 +95,44 @@ keys. To configure a key, sign in and use the **Market data keys** panel. The
 key is sent directly to SpacetimeDB and stored in a private table. The web app
 can see whether a provider is configured, but cannot read the key back.
 
-For now, the application connects to Maincloud. `compose.yml` is a small base
-for a later self-hosted SpacetimeDB deployment. A production deployment should
-pin the image version and put TLS/reverse-proxy protection in front of it.
+## Run with Docker
+
+Docker Compose runs the full self-hosted app: SpacetimeDB, automatic module
+publishing, and the Fresh web application. Application images are published to
+the private GitHub Container Registry by each release.
+
+```bash
+cp .env.example .env
+docker login ghcr.io
+docker compose pull
+docker compose up -d
+```
+
+Open <http://127.0.0.1:8000>. SpacetimeDB is available at
+<http://127.0.0.1:3000>. Portfolio data and the publisher identity are kept in
+Docker volumes, so a normal restart does not remove them.
+
+The GHCR login needs a classic GitHub personal access token with the
+`read:packages` permission. Dockhand needs the same registry credentials. The
+released frontend connects to port `3000` on the hostname used to open the app.
+A public HTTPS deployment should build the frontend with `VITE_SPACETIMEDB_HOST`
+set to its externally reachable SpacetimeDB URL.
+
+To deploy another released version manually, update `EXPOSURE_RADAR_VERSION` or
+keep `latest`, then run:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+Dockhand can perform the same pull and stack redeployment. Redeploy the whole
+stack so the one-shot publisher runs before the frontend starts.
+
+`docker compose down` stops the app but preserves data. **Do not add `--volumes`
+unless you intend to permanently remove portfolios, market-data keys, and the
+publisher identity.** A public deployment should put TLS and access controls in
+front of SpacetimeDB.
 
 ## Portfolio secret
 

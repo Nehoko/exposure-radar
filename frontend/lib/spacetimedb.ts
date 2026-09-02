@@ -1,7 +1,7 @@
 import type { Identity } from "spacetimedb";
 import { DbConnection } from "../src/module_bindings/index.ts";
 
-const HOST = getRequiredEnv("VITE_SPACETIMEDB_HOST");
+const HOST = resolveHost(getRequiredEnv("VITE_SPACETIMEDB_HOST"));
 const DATABASE_NAME = getRequiredEnv("VITE_SPACETIMEDB_DB_NAME");
 const TOKEN_KEY = `${HOST}/${DATABASE_NAME}/auth_token`;
 
@@ -39,4 +39,13 @@ function getRequiredEnv(name: string): string {
     throw new Error(`Missing required env: ${name}`);
   }
   return env;
+}
+
+function resolveHost(configuredHost: string): string {
+  if (configuredHost !== "auto") return configuredHost;
+
+  const location = globalThis.location;
+  if (location === undefined) return "http://127.0.0.1:3000";
+
+  return `${location.protocol}//${location.hostname}:3000`;
 }

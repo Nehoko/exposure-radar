@@ -103,7 +103,7 @@ Goal: Replace test prices with a small amount of real or delayed market data.
 - [x] Store optional provider keys in a private SpacetimeDB table.
 - [x] Make external requests from SpacetimeDB procedures, not Fresh.
 - [x] Try another provider when Yahoo data is missing or old.
-- [x] Add a simple Compose base for future self-hosting.
+- [x] Add a complete Compose deployment for self-hosting.
 
 Done when: the app can update a few prices without manual input.
 
