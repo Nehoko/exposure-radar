@@ -71,6 +71,12 @@ immediately without refreshing the page.
 
 See [PLAN.md](PLAN.md) for small development milestones.
 
+## Contributing
+
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before
+opening a pull request. Report vulnerabilities privately as described in
+[SECURITY.md](SECURITY.md).
+
 ## Project status
 
 Milestone 6 is complete. A user can create a private portfolio, add positions,
@@ -95,15 +101,19 @@ keys. To configure a key, sign in and use the **Market data keys** panel. The
 key is sent directly to SpacetimeDB and stored in a private table. The web app
 can see whether a provider is configured, but cannot read the key back.
 
+The software licence does not include a licence to provider data. Self-hosted
+operators must supply their own permitted credentials and follow provider rules
+for display, caching, retention, attribution, and commercial use. See
+[DATA_LICENSING.md](DATA_LICENSING.md).
+
 ## Run with Docker
 
 Docker Compose runs the full self-hosted app: SpacetimeDB, automatic module
 publishing, and the Fresh web application. Application images are published to
-the private GitHub Container Registry by each release.
+the GitHub Container Registry by each release.
 
 ```bash
 cp .env.example .env
-docker login ghcr.io
 docker compose pull
 docker compose up -d
 ```
@@ -112,11 +122,12 @@ Open <http://127.0.0.1:8000>. SpacetimeDB is available at
 <http://127.0.0.1:3000>. Portfolio data and the publisher identity are kept in
 Docker volumes, so a normal restart does not remove them.
 
-The GHCR login needs a classic GitHub personal access token with the
-`read:packages` permission. Dockhand needs the same registry credentials. The
-released frontend connects to port `3000` on the hostname used to open the app.
-A public HTTPS deployment should build the frontend with `VITE_SPACETIMEDB_HOST`
-set to its externally reachable SpacetimeDB URL.
+Public GHCR images need no login. A private fork needs a classic GitHub personal
+access token with the `read:packages` permission; Dockhand needs the same
+registry credentials. The released frontend connects to port `3000` on the
+hostname used to open the app. A public HTTPS deployment should build the
+frontend with `VITE_SPACETIMEDB_HOST` set to its externally reachable
+SpacetimeDB URL.
 
 To deploy another released version manually, update `EXPOSURE_RADAR_VERSION` or
 keep `latest`, then run:
@@ -147,3 +158,11 @@ browser's identity until the user signs out.
 
 Exposure Radar is an educational project. It does not provide financial advice
 and it does not execute trades.
+
+## Licence
+
+Copyright (C) 2026 Ilia Mikhailov and Exposure Radar contributors.
+
+The software is licensed under the GNU Affero General Public License,
+`AGPL-3.0-or-later`. See [LICENSE](LICENSE). The Exposure Radar name and project
+branding are covered separately by [TRADEMARKS.md](TRADEMARKS.md).

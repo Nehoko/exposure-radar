@@ -4,12 +4,20 @@ dist
 _fresh
 *.log
 
-# Local environment files
+# Local environment and deployment files
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+!**/.env.example
+compose.override.yml
+compose.production.yml
+deploy/private/
+*.pem
+*.p12
+*.pfx
+*.key
+credentials.*
+secrets.*
 
 .DS_Store
 

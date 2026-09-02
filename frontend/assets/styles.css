@@ -1625,6 +1625,14 @@ footer {
   text-align: center;
 }
 
+footer a {
+  color: #71809a;
+}
+
+footer a:hover {
+  color: #aebbd0;
+}
+
 @media (max-width: 800px) {
   .hero {
     grid-template-columns: 1fr;

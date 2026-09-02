@@ -65,7 +65,14 @@ export default function PortfolioApp({ debug }: PortfolioAppProps) {
       </main>
 
       <footer>
-        Educational project only. No investment advice or trading.
+        Educational project only. No investment advice or trading.{"  "}
+        <a
+          href="https://github.com/Nehoko/exposure-radar"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Source code
+        </a>.
       </footer>
     </div>
   );
