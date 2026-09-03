@@ -1,6 +1,17 @@
 name: exposure-radar
 
 services:
+  spacetimedb-init:
+    image: clockworklabs/spacetime:v2.8.2
+    user: root
+    entrypoint:
+      - /bin/sh
+      - -c
+      - mkdir -p /stdb/data && chown -R spacetime:spacetime /stdb
+    volumes:
+      - spacetimedb-data:/stdb
+    restart: "no"
+
   spacetimedb:
     image: clockworklabs/spacetime:v2.8.2
     command:
@@ -14,14 +25,15 @@ services:
       - "${SPACETIMEDB_PORT:-3000}:3000"
     volumes:
       - spacetimedb-data:/stdb
+    depends_on:
+      spacetimedb-init:
+        condition: service_completed_successfully
     healthcheck:
-      test: [
-        "CMD",
-        "spacetime",
-        "server",
-        "ping",
-        "http://127.0.0.1:3000",
-      ]
+      test:
+        - CMD
+        - /bin/bash
+        - -c
+        - exec 3<>/dev/tcp/127.0.0.1/3000
       interval: 5s
       timeout: 3s
       retries: 20
