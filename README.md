@@ -124,10 +124,10 @@ Docker volumes, so a normal restart does not remove them.
 
 Public GHCR images need no login. A private fork needs a classic GitHub personal
 access token with the `read:packages` permission; Dockhand needs the same
-registry credentials. The released frontend connects to port `3000` on the
-hostname used to open the app. A public HTTPS deployment should build the
-frontend with `VITE_SPACETIMEDB_HOST` set to its externally reachable
-SpacetimeDB URL.
+registry credentials. The released frontend connects to `SPACETIMEDB_PORT` on
+the hostname used to open the app. Set `SPACETIMEDB_BROWSER_URL` to an
+externally reachable SpacetimeDB URL when using TLS, a reverse proxy, or a
+different public host.
 
 To deploy another released version manually, update `EXPOSURE_RADAR_VERSION` or
 keep `latest`, then run:

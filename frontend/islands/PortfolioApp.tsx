@@ -6,10 +6,22 @@ import { usePortfolioController } from "../hooks/usePortfolioController.ts";
 
 interface PortfolioAppProps {
   debug: boolean;
+  spacetimeDbHost: string;
+  spacetimeDbPort: string;
+  spacetimeDbName: string;
 }
 
-export default function PortfolioApp({ debug }: PortfolioAppProps) {
-  const portfolio = usePortfolioController();
+export default function PortfolioApp({
+  debug,
+  spacetimeDbHost,
+  spacetimeDbPort,
+  spacetimeDbName,
+}: PortfolioAppProps) {
+  const portfolio = usePortfolioController({
+    host: spacetimeDbHost,
+    port: spacetimeDbPort,
+    databaseName: spacetimeDbName,
+  });
   return (
     <div class="page-shell">
       <header class="site-header">

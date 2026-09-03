@@ -56,6 +56,9 @@ services:
     image: ghcr.io/nehoko/exposure-radar-frontend:${EXPOSURE_RADAR_VERSION:-latest}
     environment:
       EXPOSURE_RADAR_DEBUG: ${EXPOSURE_RADAR_DEBUG:-false}
+      SPACETIMEDB_BROWSER_URL: ${SPACETIMEDB_BROWSER_URL:-auto}
+      SPACETIMEDB_BROWSER_PORT: ${SPACETIMEDB_PORT:-3000}
+      SPACETIMEDB_DATABASE: ${SPACETIMEDB_DATABASE:-exposure-radar}
     ports:
       - "${EXPOSURE_RADAR_PORT:-8000}:8000"
     healthcheck:

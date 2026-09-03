@@ -19,7 +19,13 @@ import type {
   TestPriceFeed,
 } from "../src/module_bindings/types.ts";
 
-export function usePortfolioController() {
+interface SpacetimeDbConfig {
+  host: string;
+  port: string;
+  databaseName: string;
+}
+
+export function usePortfolioController(config: SpacetimeDbConfig) {
   const [status, setStatus] = useState<ConnectionState>("connecting");
   const [identity, setIdentity] = useState<string>();
   const [connection, setConnection] = useState<DbConnection>();
@@ -74,7 +80,7 @@ export function usePortfolioController() {
 
   useEffect(() => {
     let disposed = false;
-    const conn = connectToSpacetimeDB({
+    const conn = connectToSpacetimeDB(config, {
       onConnected(activeConnection, connectedIdentity) {
         if (disposed) return;
         const syncPortfolio = () => {
@@ -163,7 +169,7 @@ export function usePortfolioController() {
       disposed = true;
       conn.disconnect();
     };
-  }, []);
+  }, [config.databaseName, config.host, config.port]);
 
   const assetsById = useMemo(
     () => new Map(assets.map((asset) => [asset.id, asset])),
@@ -244,7 +250,7 @@ export function usePortfolioController() {
     setConnectionError(undefined);
     try {
       await connection.reducers.logoutPortfolio({});
-      forgetSpacetimeDBToken();
+      forgetSpacetimeDBToken(config);
       globalThis.location.reload();
     } catch (error) {
       setConnectionError(getErrorMessage(error, "Could not sign out."));
